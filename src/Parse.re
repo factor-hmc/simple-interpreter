@@ -11,6 +11,13 @@ let lex(str: string): list(string) =
 type parser('parsed) =
   list(string) => either(string, (list(string), 'parsed));
 
+let run_parser(p: parser('a), input: list(string)): either(string, 'a) =
+  switch(p(input)) {
+  | Failure(f) => Failure(f);
+  | Result(([], res)) => Result(res);
+  | Result((toks, res)) => Failure("{j|Parser didn't consume all input.|j}");
+  }
+
 let bind(p: parser('a), next: 'a => parser('b)): parser('b) =
   (toks: list(string)) => {
     switch(p(toks)) {
@@ -106,23 +113,21 @@ let boolean_p(toks: list(string)) =
                   };
   };
 
-// let words_p: parser(list(word));
-// let word_p: parser(word);
-// let push_p: parser(word);
-// let literal_p: parser(literal);
-// let list_p: parser(literal);
-// let quotation_p: parser(literal);
-
-let rec words_p = many(word_p)
-and word_p =
-  choice([builtin_p, push_p])
-and push_p =
-  literal_p >>= (lit) => pure(Push(lit))
-and literal_p =
-  choice([integer_p , boolean_p, list_p, quotation_p])
-and list_p =
-  between(symbol_p("{"), symbol_p("}"), literal_p)
-and quotation_p =
+let rec words_p_((): unit): parser(list(word)) = many(word_p_(()))
+and word_p_((): unit): parser(word) =
+  choice([builtin_p , push_p_(())])
+and push_p_((): unit): parser(word) =
+  literal_p_(()) >>= (lit) => pure(Push(lit))
+and literal_p_((): unit): parser(literal) =
+  choice([integer_p , boolean_p, list_p_(()), quotation_p_(())])
+and list_p_((): unit): parser(literal) =
+  between(symbol_p("{"), symbol_p("}"), literal_p_ ())
+and quotation_p_((): unit): parser(literal) =
   between(symbol_p("["), symbol_p("]"),
-          (words_p >>= (words) => pure(Quotation(words)))
+          (words_p_(()) >>= (words) => pure(Quotation(words)))
   );
+
+let words_p = words_p_(());
+
+let parse(code: string): either(string, list(word)) =
+  lex(code) |> run_parser(words_p);

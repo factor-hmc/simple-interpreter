@@ -7,6 +7,7 @@ var Caml_obj = require("bs-platform/lib/js/caml_obj.js");
 var Caml_int32 = require("bs-platform/lib/js/caml_int32.js");
 var Pervasives = require("bs-platform/lib/js/pervasives.js");
 var Lang$FactorInterpreter = require("./Lang.bs.js");
+var Parse$FactorInterpreter = require("./Parse.bs.js");
 
 function $$eval(stack, word) {
   if (typeof word === "number") {
@@ -303,7 +304,20 @@ function eval_words(stack, words) {
   return List.fold_left($$eval, stack, words);
 }
 
+function interact(code) {
+  var match = Parse$FactorInterpreter.parse(code);
+  if (match.tag) {
+    return Lang$FactorInterpreter.print_stack(List.fold_left($$eval, /* [] */0, match[0]));
+  } else {
+    console.log(match[0]);
+    return /* () */0;
+  }
+}
+
+interact("1 2 +");
+
 exports.$$eval = $$eval;
 exports.eval_words = eval_words;
 exports.eval_while = eval_while;
-/* No side effect */
+exports.interact = interact;
+/*  Not a pure module */

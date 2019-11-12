@@ -1,4 +1,5 @@
 open List;
+open Parse;
 open Lang;
 
 let rec eval(stack: stack, word: word): stack =
@@ -23,3 +24,11 @@ and eval_while(stack: stack, body: list(word), pred: list(word)): stack =
   | [b,  ...st] => to_bool(b) ? eval_while(eval_words(st, body), body, pred) : st;
   | _ => failwith("eval_while empty stack");
   };
+
+let interact(code: string): unit =
+  switch(parse(code)) {
+  | Failure(f) => print_endline(f);
+  | Result(words) => print_stack(eval_words([], words));
+  }
+
+interact("1 2 +");
