@@ -1,11 +1,10 @@
-type either('failure, 'ok)
-  = Failure('failure)
-  | Result('ok);
+open Belt.Result;
 
-let either_of_option(failure: 'failure, opt: option('ok)): either('failure, 'ok) =
+type result('error, 'ok) = Belt.Result.t('ok, 'error);
+let result_of_option(failure: 'failure, opt: option('ok)): result('failure, 'ok) =
   switch(opt) {
-  | None     => Failure(failure);
-  | Some(ok) => Result(ok);
+  | None     => Error(failure);
+  | Some(ok) => Ok(ok);
   };
 
 let rec lookup(key: 'a, assoc: list(('a, 'b))): option('b) =

@@ -1,46 +1,49 @@
 open Lang;
 open List;
 open Utils;
+
+open Belt.Result;
 open Js.String;
 
+// lex only on spaces for now
 let lex(str: string): list(string) =
-  Js.String.split(str, "") |> Array.to_list;
+  Js.String.split(" ", str) |> Array.to_list |> filter((s) => length(s) > 0);
 
 // we could make 'string' a type parameter too, but this doesn't
 // need to be extensible...
 type parser('parsed) =
-  list(string) => either(string, (list(string), 'parsed));
+  list(string) => result(string, (list(string), 'parsed));
 
-let run_parser(p: parser('a), input: list(string)): either(string, 'a) =
+let run_parser(p: parser('a), input: list(string)): result(string, 'a) =
   switch(p(input)) {
-  | Failure(f) => Failure(f);
-  | Result(([], res)) => Result(res);
-  | Result((toks, res)) => Failure("{j|Parser didn't consume all input.|j}");
+  | Error(f) => Error(f);
+  | Ok(([], res)) => Ok(res);
+  | Ok((toks, res)) => Error({j|Parser didn't consume all input, [$toks] remaining.|j});
   }
 
 let bind(p: parser('a), next: 'a => parser('b)): parser('b) =
   (toks: list(string)) => {
     switch(p(toks)) {
-    | Failure(f) => Failure(f);
-    | Result((new_toks, res)) => next(res)(new_toks);
+    | Error(f) => Error(f);
+    | Ok((new_toks, res)) => next(res)(new_toks);
     };
   };
+let (>>=) = bind;
 
 let try_both(p1: parser('a), p2: parser('a)) =
   (toks: list(string)) => {
     switch(p1(toks)) {
-    | Failure(_f) => p2(toks);
-    | Result((new_toks, res)) => Result((new_toks, res));
+    | Error(_f) => p2(toks);
+    | Ok((new_toks, res)) => Ok((new_toks, res));
     }
   };
+let (<|>) = try_both
 
-let fail(message: string) = (_toks: list(string)) => Failure(message);
+let fail(message: string) = (_toks: list(string)) => Error(message);
 
 let pure(res: 'parsed): parser('parsed) =
-  (toks: list(string)) => Result((toks, res));
+  (toks: list(string)) => Ok((toks, res));
 
-let (>>=) = bind;
-let (<|>) = try_both
 
 let rec many(p: parser('a)): parser(list('a)) =
   some(p) <|> pure([])
@@ -77,57 +80,55 @@ let builtins: list((string, word)) =
 // let builtin_p: parser(word);
 let builtin_p(toks: list(string)) =
   switch(toks) {
-  | [] => Failure("builtin: empty input");
+  | [] => Error("builtin: empty input");
   | [t, ...ts] => switch(lookup(t, builtins)){
-                  | None    => Failure({j|builtin: Not a builtin: $t|j});
-                  | Some(b) => Result((ts, b));
+                  | None    => Error({j|builtin: Not a builtin: $t|j});
+                  | Some(b) => Ok((ts, b));
                   };
   };
 
 let symbol_p(symb: string): parser(string) =
   (toks: list(string)) => {
     switch(toks) {
-    | [t, ...ts] when t == symb => Result((ts, symb));
-    | _ => Failure({j|Failed to parse symbol $symb|j});
+    | [t, ...ts] when t == symb => Ok((ts, symb));
+    | _ => Error({j|Failed to parse symbol $symb|j});
     }
   };
 
 // let integer_p: parser(literal);
 let integer_p(toks: list(string)) =
   switch(toks) {
-  | [] => Failure("integer: empty input");
+  | [] => Error("integer: empty input");
   | [t, ...ts] => switch(int_of_string(t)) {
-                  | exception _ => Failure({j|integer: cannot convert $t to integer|j});
-                  | n    => Result((ts, Int(n)));
+                  | exception _ => Error({j|integer: cannot convert $t to integer|j});
+                  | n    => Ok((ts, Int(n)));
                   };
   };
 
 // let boolean_p: parser(literal);
 let boolean_p(toks: list(string)) =
   switch(toks) {
-  | [] => Failure("boolean: empty input");
+  | [] => Error("boolean: empty input");
   | [t, ...ts] => switch(t) {
-                  | "t" => Result((ts, True));
-                  | "f" => Result((ts, False));
-                  | _   => Failure({j|boolean: cannot convert $t to boolean|j});
+                  | "t" => Ok((ts, True));
+                  | "f" => Ok((ts, False));
+                  | _   => Error({j|boolean: cannot convert $t to boolean|j});
                   };
   };
 
-let rec words_p_((): unit): parser(list(word)) = many(word_p_(()))
-and word_p_((): unit): parser(word) =
-  choice([builtin_p , push_p_(())])
-and push_p_((): unit): parser(word) =
-  literal_p_(()) >>= (lit) => pure(Push(lit))
-and literal_p_((): unit): parser(literal) =
-  choice([integer_p , boolean_p, list_p_(()), quotation_p_(())])
-and list_p_((): unit): parser(literal) =
-  between(symbol_p("{"), symbol_p("}"), literal_p_ ())
-and quotation_p_((): unit): parser(literal) =
-  between(symbol_p("["), symbol_p("]"),
-          (words_p_(()) >>= (words) => pure(Quotation(words)))
-  );
+let literal_p: parser(literal) = choice([integer_p , boolean_p]);
+let push_p: parser(word) = literal_p >>= (lit) => pure(Push(lit));
+let word_p: parser(word) = choice([builtin_p , push_p]);
+let words_p: parser(list(word)) = many(word_p);
+/* and list_p: parser(literal) = */
+/*   between(symbol_p("{"), symbol_p("}"), literal_p) */
+/* and quotation_p: parser(literal) = */
+/*   between(symbol_p("["), symbol_p("]"), */
+/*           (words_p >>= (words) => pure(Quotation(words))) */
+/*   ); */
 
-let words_p = words_p_(());
-
-let parse(code: string): either(string, list(word)) =
-  lex(code) |> run_parser(words_p);
+let const(x, y) = y;
+let parse(code: string): result(string, list(word)) =
+  lex(code)
+//  |> ((lexed) => const(print_endline({j|[$lexed]|j}), lexed))
+  |> run_parser(words_p);
