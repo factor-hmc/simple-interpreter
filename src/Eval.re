@@ -21,6 +21,7 @@ let rec eval = (stack: stack, word: word): result(string, stack) =>
   | (Drop, [_x, ...st]) => Ok(st)
   | (While, [Quotation(body), Quotation(pred), ...st]) =>
     eval_while(st, body, pred)
+  | (Clear, _) => Ok([])
   | _ =>
     print_stack(stack);
     Error("improper stack contents");
@@ -66,5 +67,5 @@ let run = (stack: stack, code: string): result(string, stack) =>
   | Ok(words) => eval_words(stack, words)
   };
 
-interact("1 dup 2 * +");
-// interact("7 dup [ dup 1 = f = ] [ 1 - dup rot mul swap ] while drop");
+//interact("1 dup 2 * +");
+// interact("7 dup [ dup 1 = f = ] [ 1 - dup rot * swap ] while drop");

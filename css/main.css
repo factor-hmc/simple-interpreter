@@ -30,6 +30,10 @@
     margin-right: .5em;
 }
 
+#terminal .snapshot .prompt .historyInput {
+    white-space: pre;
+}
+
 #terminal .snapshot .prompt .input {
     padding: 0;
     background: none;

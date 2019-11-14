@@ -14,6 +14,8 @@ let lex = (str: string): list(string) =>
 type parser('parsed) =
   list(string) => result(string, (list(string), 'parsed));
 
+type parsed('parsed) = result(string, (list(string), 'parsed));
+
 let run_parser = (p: parser('a), input: list(string)): result(string, 'a) =>
   switch (p(input)) {
   | Error(f) => Error(f)
@@ -68,6 +70,7 @@ let builtins: list((string, word)) = [
   ("rot", Rot),
   ("drop", Drop),
   ("while", While),
+  ("clear", Clear),
 ];
 
 // let builtin_p: parser(word);
@@ -112,16 +115,50 @@ let boolean_p = (toks: list(string)) =>
     }
   };
 
-let literal_p: parser(literal) = choice([integer_p, boolean_p]);
-let push_p: parser(word) = literal_p >>= (lit => pure(Push(lit)));
-let word_p: parser(word) = choice([builtin_p, push_p]);
-let words_p: parser(list(word)) = many(word_p);
-/* and list_p: parser(literal) = */
-/*   between(symbol_p("{"), symbol_p("}"), literal_p) */
-/* and quotation_p: parser(literal) = */
-/*   between(symbol_p("["), symbol_p("]"), */
-/*           (words_p >>= (words) => pure(Quotation(words))) */
-/*   ); */
+//let fix(f) = { let rec f' = lazy(f(g)) and g(x) = Lazy.force(f')(x); g };
+
+//type parsers = {
+//  literal_p: parser(literal),
+//  push_p: parser(word),
+//  word_p: parser(word),
+//  words_p:
+//};
+
+//let rec literal' =
+//        ((parsers_p', push_p', word_p', words_p', list_p, quotation_p)) => (
+//  choice([integer_p, boolean_p]),
+//  literal_p' >>= (lit => pure(Push(lit))),
+//  choice([builtin_p, push_p']),
+//  many(word_p'),
+//  between(symbol_p("{"), symbol_p("}"), literal_p'),
+//  between(
+//    symbol_p("["),
+//    symbol_p("]"),
+//    words_p' >>= (words => pure(Quotation(words))),
+//  ),
+//);
+
+let rec literal_p = (l): parsed(literal) =>
+  choice([integer_p, boolean_p, list_p, quotation_p], l)
+and push_p = (l): parsed(word) =>
+  (literal_p >>= (lit => pure(Push(lit))))(l)
+and word_p = (l): parsed(word) => choice([builtin_p, push_p], l)
+and words_p = (l): parsed(list(word)) => many(word_p, l)
+and list_p = (l): parsed(literal) =>
+  between(symbol_p("{"), symbol_p("}"), many(literal_p) >>= (lits => pure(List(lits))), l)
+and quotation_p = (l): parsed(literal) =>
+  between(
+    symbol_p("["),
+    symbol_p("]"),
+    words_p >>= (words => pure(Quotation(words))),
+    l,
+  );
+//and literal_p = Lazy.force(literal_p')
+//and push_p = Lazy.force(push_p')
+//and word_p = Lazy.force(word_p')
+//and words_p = Lazy.force(words_p')
+//and list_p = Lazy.force(list_p')
+//and quotation_p = Lazy.force(quotation_p');
 
 let const = (_x, y) => y;
 let parse = (code: string): result(string, list(word)) =>
