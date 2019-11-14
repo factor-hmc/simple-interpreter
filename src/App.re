@@ -19,7 +19,7 @@ type msg =
 let init: model = {
   history: [],
   current: {
-    stack: [Lang.Int(1)],
+    stack: [],
     input: "",
     output: "",
   },
