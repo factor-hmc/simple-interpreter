@@ -1,0 +1,47 @@
+#main {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#terminal {
+    height: 2em;
+    background: whitesmoke;
+    margin: 2em auto;
+    width: 60rem;
+    height: 40rem;
+    font: 1rem 'Roboto Mono', monospace;
+    overflow-y: scroll;
+}
+
+#terminal .snapshot .prompt {
+    display: flex;
+    align-items: baseline;
+}
+
+#terminal .snapshot .prompt .in::before {
+    content: 'IN: scratchpad';
+}
+
+#terminal .snapshot .prompt .in {
+    background: lightpink;
+    margin-right: .5em;
+}
+
+#terminal .snapshot .prompt .input {
+    padding: 0;
+    background: none;
+    border: none;
+    flex-grow: 1;
+    font: inherit;
+}
+
+#terminal .snapshot .stack .title::before {
+    content: "--- Data stack:";
+}
+#terminal .snapshot .stack .title {
+    color: gray;
+    margin-top: 1em;
+}
