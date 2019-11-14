@@ -1,7 +1,7 @@
 open List;
 
-type literal
-  = Int(int)
+type literal =
+  | Int(int)
   | True
   | False
   | String(string)
@@ -10,8 +10,8 @@ type literal
 
 and stack = list(literal)
 
-and word
-  = Push(literal)
+and word =
+  | Push(literal)
   | Add
   | Sub
   | Mul
@@ -24,21 +24,35 @@ and word
   | Drop
   | While;
 
-let print_literal(literal: literal): unit =
-  switch (literal) {
-  | Int(x)  => print_endline("Int(" ++ string_of_int(x) ++ ")");
-  | True    => print_endline("True");
-  | False    => print_endline("False");
-  | String(_) => print_endline("String");
-  | List(_) => print_endline("List");
-  | Quotation(_) => print_endline("Quotation");
-  }
+let rec repr: literal => string =
+  fun
+  | Int(n) => string_of_int(n)
+  | True => "t"
+  | False => "f"
+  | String(s) => "\"" ++ s ++ "\""
+  | List(l) =>
+    "{ "
+    ++ l->Belt.List.map(repr)->Belt.List.toArray->Js.Array2.joinWith(" ")
+    ++ " }";
 
-let print_stack(stack: stack): unit =
+let stringOfLiteral = (literal: literal): string =>
+  switch (literal) {
+  | Int(x) => "Int(" ++ string_of_int(x) ++ ")"
+  | True => "True"
+  | False => "False"
+  | String(_) => "String"
+  | List(_) => "List"
+  | Quotation(_) => "Quotation"
+  };
+
+let print_literal = (lit: literal): unit =>
+  print_endline(stringOfLiteral(lit));
+
+let print_stack = (stack: stack): unit =>
   stack |> List.iter((elem: literal) => print_literal(elem));
 
-let to_bool(literal: literal): bool =
-  switch(literal) {
-  | False => false;
-  | _ => true;
+let to_bool = (literal: literal): bool =>
+  switch (literal) {
+  | False => false
+  | _ => true
   };
