@@ -14,3 +14,7 @@ docker:
 .PHONY: dev
 dev:
 	parcel serve --hmr-port 12345 index.html
+
+.PHONY: build
+build:
+	parcel build index.html
