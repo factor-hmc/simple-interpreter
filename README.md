@@ -34,21 +34,60 @@ to build the "application" (currently just an empty page that serves the js outp
 
 # Notes
 
-Parsing _could_ work properly except OCaml doesn't allow recursive value
-definitions!! So I've removed the mutually recursive parts of the parser that
-cause type errors. I will fix this eventually.
-
 Right now the `result` type is the opposite order of `Belt.Result.t` since
 that's the convention I was used to. I export a `result` constructor in `Utils`
 for convenience which is flipped. It'll get fixed eventually...
 
 # Examples
 
+Typing literals pushes them onto the stack
 ```
->>> eval_words([Int(7)], 
-  [ Dup
-  , Push(Quotation([Dup, Push(Int(1)), Eq, Push(False), Eq]))
-  , Push(Quotation([Push(Int(1)), Sub, Dup, Rot, Mul, Swap]))
-  , While, Drop])
-- : stack = [Int(5040)]
+  1 2
+-- Data stack:
+1
+2
+```
+
+Simple operations
+```
+  +
+-- Data stack:
+3
+  1 -
+-- Data stack:
+2
+  5 *
+-- Data stack:
+10
+  dup
+-- Data stack:
+10
+10
+  drop
+-- Data stack:
+10
+  dup dup dup
+-- Data stack:
+10
+10
+10
+10
+  clear
+```
+
+If
+```
+  10 t [ 1 + ] [ 1 - ] if
+-- Data stack:
+11
+  10 f [ 1 + ] [ 1 - ] if
+-- Data stack:
+9
+```
+
+Factorial
+```
+  7 dup [ dup 1 = f = ] [ 1 - dup rot * swap ] while drop
+-- Data stack:
+5040
 ```
