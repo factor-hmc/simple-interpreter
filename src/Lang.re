@@ -1,5 +1,3 @@
-open List;
-
 type literal =
   | Int(int)
   | True
