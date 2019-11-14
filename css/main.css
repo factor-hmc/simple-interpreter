@@ -6,10 +6,20 @@
     justify-content: center;
 }
 
+#logo {
+    background: url('../logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    height: 0;
+    background-position: center;
+    flex-grow: 1;
+    margin-top: 1rem;
+    max-height: 12rem;
+}
+
 #terminal {
-    height: 2em;
     background: whitesmoke;
-    margin: 2em auto;
+    margin: .5rem auto 2rem auto;
     width: 60rem;
     height: 40rem;
     font: 1rem 'Roboto Mono', monospace;
