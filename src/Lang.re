@@ -6,8 +6,6 @@ type literal =
   | List(list(literal))
   | Quotation(list(word))
 
-and stack = list(literal)
-
 and word =
   | Push(literal)
   | Add
@@ -20,8 +18,10 @@ and word =
   | Swap
   | Rot
   | Drop
-| While
-| Clear;
+  | While
+  | Clear;
+
+type stack = list(literal);
 
 let rec reprWord: word => string =
   fun
@@ -37,7 +37,7 @@ let rec reprWord: word => string =
   | Rot => "rot"
   | Drop => "drop"
   | While => "while"
-| Clear => "clear"
+  | Clear => "clear"
 and repr: literal => string =
   fun
   | Int(n) => string_of_int(n)
@@ -56,18 +56,8 @@ and repr: literal => string =
        ->Js.Array2.joinWith(" ")
     ++ " ]";
 
-let stringOfLiteral = (literal: literal): string =>
-  switch (literal) {
-  | Int(x) => "Int(" ++ string_of_int(x) ++ ")"
-  | True => "True"
-  | False => "False"
-  | String(_) => "String"
-  | List(_) => "List"
-  | Quotation(_) => "Quotation"
-  };
-
 let print_literal = (lit: literal): unit =>
-  print_endline(stringOfLiteral(lit));
+  print_endline(repr(lit));
 
 let print_stack = (stack: stack): unit =>
   stack |> List.iter((elem: literal) => print_literal(elem));

@@ -8,5 +8,7 @@ npm-debug.log
 /.vscode/
 .cache
 /dist/
+/elm-stuff
+/elm-port/elm-stuff
 
 *.bs.js

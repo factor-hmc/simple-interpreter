@@ -1,6 +1,7 @@
 open Belt.Result;
 
 type result('error, 'ok) = Belt.Result.t('ok, 'error);
+
 let result_of_option =
     (failure: 'failure, opt: option('ok)): result('failure, 'ok) =>
   switch (opt) {
