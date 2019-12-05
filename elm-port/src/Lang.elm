@@ -13,7 +13,8 @@ type Literal
   | Quotation (List Word)
 
 type Builtin
-  = Add
+  = Push Literal
+  | Add
   | Sub
   | Mul
   | Div
@@ -29,7 +30,6 @@ type Builtin
 type Word
     = Word String
     | Builtin Builtin
-    | Push Literal
 
 type alias Stack = List Literal
 

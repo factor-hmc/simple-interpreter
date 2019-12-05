@@ -39,7 +39,7 @@ word = lex <| map Word <|
 words : Parser (List Word)
 words = many
         (oneOf
-        [ map Push literal
+        [ map (Builtin << Push) literal
         , word
         ])
         |. spaces
