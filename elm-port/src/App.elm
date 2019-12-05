@@ -1,49 +1,138 @@
-
 module App exposing (..)
+
 import Browser
-import Html exposing (Html, Attribute, div, input, text)
+import Eval
+import FactorParser
+import Html exposing (Attribute, Html, div, input, text)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onInput, on)
+import Json.Decode as J
+import Lang
+import Parser
+import Pretty
+
+
 
 --MAIN
 
-main = Browser.sandbox{init = init, update = update, view = view}
+
+main =
+    Browser.sandbox { init = init, update = update, view = view }
+
 
 
 --MODEL
 
-type alias Model = {
-       content : String
+
+type alias Snapshot =
+    { input : String
+    , stack : Lang.Stack
+    , --not sure
+      output : String
     }
 
+
+type alias Model =
+    { history : List Snapshot
+    , current : Snapshot
+    }
+
+
+type Msg
+    = Input String
+    | Enter
+    | Nop
+
+
 init : Model
-init = 
-    {content = ""}
+init =
+    { history = []
+    , current =
+        { input = ""
+        , stack = []
+        , output = ""
+        }
+    }
+
 
 
 --UPDATE
-
-type Msg
-    = Change String
+--simply updating the type
 
 
 update : Msg -> Model -> Model
 update msg model =
+    let
+        setInput str snap =
+            { snap | input = str }
+        _ = Debug.log "msg" msg
+        _ = Debug.log "model" model
+    in
     case msg of
-        Change newContent ->
-            { model | content = newContent ++ " will be compilied to factor at some point!" }
+        Input str ->
+            { model
+                | current = setInput str model.current
+            }
 
+        Nop ->
+            model
+
+        Enter ->
+            case Parser.run FactorParser.words model.current.input of
+                Err e ->
+                    let 
+                        _ = Debug.log "parser error" e
+                    in
+                    model
             
 
+                Ok words ->
+                    case Eval.evalWords model.current.stack words of
+                        Err r ->
+                            let 
+                                _ = Debug.log "eval error" r
+                            in
 
+                            model
+
+                        Ok sta ->
+                            { model
+                                | history = model.current :: model.history
+                                , current =
+                                    { input = ""
+                                    , stack = sta
+                                    , output = ""
+                                    }
+                            }
 
 
 
 --VIEW
 
+
 view : Model -> Html Msg
-view model = 
-    div[]
-        [input[placeholder "Input Factor Code", value model.content, onInput Change][]
-        , div [] [text (model.content)]
+view model =
+    div []
+        [ div []
+            (model.current.stack
+                |> List.map (\lit -> div [] [ text (Pretty.showLiteral lit) ])
+            )
+        , input
+            [ placeholder "Input Factor Code"
+            , value model.current.input
+            , onInput Input
+            , on "keydown"
+                (J.field "key" J.string
+                    |> J.map
+                        (\key ->
+                            case key of
+                                "Enter" ->
+                                    Enter
+
+                                _ ->
+                                    Nop
+                        )
+                )
+            ]
+            []
         ]

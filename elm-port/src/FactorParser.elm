@@ -40,6 +40,33 @@ words : Parser (List Word)
 words = many
         (oneOf
         [ map (Builtin << Push) literal
+      
+            ,succeed (Builtin  Add) |. keyword "+"
+            ,succeed (Builtin  Mul) |. keyword "*"
+            ,succeed (Builtin  Sub) |. keyword "-"
+            ,succeed (Builtin  Div) |. keyword "/"
+            ,succeed (Builtin  Eq) |. keyword "="
+            ,succeed (Builtin  If) |. keyword "if"
+            ,succeed (Builtin  Dup) |. keyword "dup"
+            ,succeed (Builtin  Swap) |. keyword "swap"
+            ,succeed (Builtin  Rot) |. keyword "rot"
+            ,succeed (Builtin  Drop) |. keyword "drop"
+            ,succeed (Builtin  While) |. keyword "while"
+            ,succeed (Builtin  Clear) |. keyword "clear"
+
+           {-} | Sub
+            | Mul
+            | Div
+            | Eq
+            | If
+            | Dup
+            | Swap
+            | Rot
+            | Drop
+            | While
+            | Clear
+            -}
+        
         , word
         ])
         |. spaces

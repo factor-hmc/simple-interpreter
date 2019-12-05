@@ -19,10 +19,10 @@ numericBinaryOp floatOp intOp stack =
 divide : Stack -> Result String Stack
 divide stack =
     case stack of
-        (Int x::Int y::rest) -> Ok <| Float (toFloat x / toFloat y) :: rest
-        (Float x::Float y::rest) -> Ok <| Float (x / y) :: rest
-        (Int x::Float y::rest) -> Ok <| Float ((toFloat x) / y) :: rest
-        (Float x::Int y::rest) -> Ok <| Float (x / (toFloat y)) :: rest
+        (Int x::Int y::rest) -> Ok <| Float (toFloat y / toFloat x) :: rest
+        (Float x::Float y::rest) -> Ok <| Float (y / x) :: rest
+        (Int x::Float y::rest) -> Ok <| Float (y/ (toFloat x)) :: rest
+        (Float x::Int y::rest) -> Ok <| Float ((toFloat y) / x) :: rest
         [x] -> Err "Two numeric arguments expected, got only one element on stack."
         [] -> Err "Two numeric arguments expected, got empty stack."
         _  -> Err "Two numeric arguments expected, got non-numeric type."
@@ -46,6 +46,7 @@ evalBuiltin stack builtin =
         (x::y::rest, Swap) -> Ok <| y::x::rest
         (x::y::z::rest, Rot) -> Ok <| z::x::y::rest
         (x::rest, Drop) -> Ok <| rest
+        (_, Push lit) -> Ok <| lit::stack
         (Quotation body::Quotation pred::rest, While) -> evalWhile rest body pred
         (_, Clear) -> Ok []
         _ -> Err "Invalid stack contents."

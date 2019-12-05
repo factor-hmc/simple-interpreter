@@ -16,6 +16,7 @@ showLiteral lit =
 showBuiltin : Builtin -> String
 showBuiltin b =
     case b of
+        Push lit  -> showLiteral lit
         Add   -> "+"
         Sub   -> "-"
         Mul   -> "*"
@@ -34,4 +35,4 @@ showWord word =
     case word of
         Word str  -> str
         Builtin b -> showBuiltin b
-        Push lit  -> showLiteral lit
+
