@@ -65,8 +65,7 @@ update msg model =
     let
         setInput str snap =
             { snap | input = str }
-        _ = Debug.log "msg" msg
-        _ = Debug.log "model" model
+
     in
     case msg of
         Input str ->
@@ -80,18 +79,14 @@ update msg model =
         Enter ->
             case Parser.run FactorParser.words model.current.input of
                 Err e ->
-                    let 
-                        _ = Debug.log "parser error" e
-                    in
+
                     model
             
 
                 Ok words ->
                     case Eval.evalWords model.current.stack words of
                         Err r ->
-                            let 
-                                _ = Debug.log "eval error" r
-                            in
+
 
                             model
 
