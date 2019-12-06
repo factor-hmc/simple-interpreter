@@ -12,3 +12,6 @@ npm-debug.log
 /elm-port/elm-stuff
 
 *.bs.js
+
+# Local Netlify folder
+.netlify
