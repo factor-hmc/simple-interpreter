@@ -8,7 +8,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, on)
 import Json.Decode as J
 import Lang
-import Parser
+import Parser exposing ((|.))
 import Pretty
 
 
@@ -77,9 +77,11 @@ update msg model =
             model
 
         Enter ->
-            case Parser.run FactorParser.words model.current.input of
+            case Parser.run (FactorParser.words |. Parser.end) model.current.input of
                 Err e ->
-
+                    let
+                        _ = Debug.log "parse error" e
+                    in
                     model
             
 
@@ -87,6 +89,9 @@ update msg model =
                     case Eval.evalWords model.current.stack words of
                         Err r ->
 
+                            let
+                                _ = Debug.log "eval error" r
+                            in
 
                             model
 

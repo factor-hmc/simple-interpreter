@@ -7,10 +7,10 @@ import Result
 numericBinaryOp : (Float -> Float -> Float) -> (Int -> Int -> Int) -> Stack -> Result String Stack
 numericBinaryOp floatOp intOp stack =
     case stack of
-        (Int x::Int y::rest)     -> Ok <| Int (intOp x y) :: rest
-        (Float x::Float y::rest) -> Ok <| Float (floatOp x y) :: rest
-        (Int x::Float y::rest) -> Ok <| Float (floatOp (toFloat x) y) :: rest
-        (Float x::Int y::rest) -> Ok <| Float (floatOp x (toFloat y)) :: rest
+        (Int x::Int y::rest)     -> Ok <| Int (intOp y x) :: rest
+        (Float x::Float y::rest) -> Ok <| Float (floatOp y x) :: rest
+        (Int x::Float y::rest) -> Ok <| Float (floatOp y (toFloat x)) :: rest
+        (Float x::Int y::rest) -> Ok <| Float (floatOp (toFloat y) x) :: rest
         [x] -> Err "Two numeric arguments expected, got only one element on stack."
         [] -> Err "Two numeric arguments expected, got empty stack."
         _  -> Err "Two numeric arguments expected, got non-numeric type."

@@ -26,6 +26,8 @@ literal = lex <| oneOf
           [ num
           , between (symbol "{") (symbol "}") (lazy <| \_ -> many literal) |> map Array
           , between (symbol "[") (symbol "]") (lazy <| \_ -> words) |> map Quotation
+          , succeed F |. keyword "f"
+          , succeed T |. keyword "t"
           ]
 
 word : Parser Word
@@ -33,7 +35,7 @@ word = lex <| map Word <|
        variable
        { start    = not << isWhitespace
        , inner    = not << isWhitespace
-       , reserved = Set.empty}
+       , reserved = Set.fromList ["]", "[", "}", "{"] }
       |. spaces
 
 words : Parser (List Word)
@@ -70,4 +72,3 @@ words = many
         , word
         ])
         |. spaces
-        |. end
