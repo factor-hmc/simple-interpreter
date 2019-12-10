@@ -24,7 +24,7 @@ initLookup =
     , ( "-", Sub )
     , ( "*", Mul )
     , ( "/", Div )
-    , ( "eq", Eq )
+    , ( "=", Eq )
     , ( "if", If )
     , ( "dup", Dup )
     , ( "swap", Swap )
