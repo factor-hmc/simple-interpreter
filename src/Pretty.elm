@@ -6,7 +6,10 @@ showLiteral : Literal -> String
 showLiteral lit =
     case lit of
         Int i           -> String.fromInt i
-        Float f         -> String.fromFloat f
+        Float f         ->
+            if floor f == ceiling f
+            then String.fromInt (truncate f) ++ ".0"
+            else String.fromFloat f
         T               -> "t"
         F               -> "f"
         String str      -> "\"" ++ str ++ "\""
