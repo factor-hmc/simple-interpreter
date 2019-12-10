@@ -1,13 +1,14 @@
 module App exposing (..)
 
 import Browser
+import Dict
 import Eval
 import FactorParser
 import Html exposing (Attribute, Html, div, input, text)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput, on)
+import Html.Events exposing (on, onInput)
 import Json.Decode as J
-import Lang
+import Lang exposing (..)
 import Parser exposing ((|.))
 import Pretty
 
@@ -26,7 +27,7 @@ main =
 
 type alias Snapshot =
     { input : String
-    , stack : Lang.Stack
+    , state : Eval.State
     , --not sure
       output : String
     }
@@ -49,7 +50,7 @@ init =
     { history = []
     , current =
         { input = ""
-        , stack = []
+        , state = Eval.init
         , output = ""
         }
     }
@@ -65,7 +66,6 @@ update msg model =
     let
         setInput str snap =
             { snap | input = str }
-
     in
     case msg of
         Input str ->
@@ -80,19 +80,18 @@ update msg model =
             case Parser.run (FactorParser.words |. Parser.end) model.current.input of
                 Err e ->
                     let
-                        _ = Debug.log "parse error" e
+                        _ =
+                            Debug.log "parse error" e
                     in
                     model
-            
 
                 Ok words ->
-                    case Eval.evalWords model.current.stack words of
+                    case Eval.evalWords model.current.state words of
                         Err r ->
-
                             let
-                                _ = Debug.log "eval error" r
+                                _ =
+                                    Debug.log "eval error" r
                             in
-
                             model
 
                         Ok sta ->
@@ -100,7 +99,7 @@ update msg model =
                                 | history = model.current :: model.history
                                 , current =
                                     { input = ""
-                                    , stack = sta
+                                    , state = sta
                                     , output = ""
                                     }
                             }
@@ -114,7 +113,7 @@ view : Model -> Html Msg
 view model =
     div []
         [ div []
-            (model.current.stack
+            (model.current.state.stack
                 |> List.map (\lit -> div [] [ text (Pretty.showLiteral lit) ])
             )
         , input
