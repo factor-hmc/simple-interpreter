@@ -1,34 +1,25 @@
 module App exposing (..)
 
 import Browser
+import Css exposing (..)
 import Dict
 import Eval
 import FactorParser
-
+import Html.Styled as H exposing (..)
+import Html.Styled.Attributes as A exposing (css, href, placeholder, src, value)
+import Html.Styled.Events exposing (on, onClick, onInput)
 import Json.Decode as J
 import Lang exposing (..)
 import Parser exposing ((|.))
 import Pretty
 
 
-import Browser
-
-import Css exposing (..)
-import Html.Styled as H exposing (..)
-import Html.Styled.Attributes as A exposing (value,  placeholder, css, href, src)
-import Html.Styled.Events exposing (on, onInput, onClick)
-
-
-
-
-
 
 --MAIN
 
- 
+
 main =
     Browser.sandbox { init = init, update = update, view = view >> toUnstyled }
-
 
 
 
@@ -64,10 +55,6 @@ init =
         , output = ""
         }
     }
-
-
-
-
 
 
 
@@ -125,15 +112,21 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div [ css [ backgroundColor (rgb 244 239 217), height(px 1024)] ]
+    div
+        [ css [ backgroundColor (rgb 244 239 217), height (px 1024) ] ]
         [ div []
             (model.current.state.stack
-                |> List.map (\lit -> div [css[marginLeft(px 512)]] [ text (Pretty.showLiteral lit) ])
+                |> List.map
+                    (\lit ->
+                        div
+                            [ css [ marginLeft (px 512) ] ]
+                            [ text (Pretty.showLiteral lit)
+                            ]
+                    )
             )
-
         , input
-            [ css[marginLeft(px 512)],
-             placeholder "Input Factor Code"
+            [ css [ marginLeft (px 512) ]
+            , placeholder "Input Factor Code"
             , value model.current.input
             , onInput Input
             , on "keydown"
@@ -151,7 +144,3 @@ view model =
             ]
             []
         ]
-
-
-
-
