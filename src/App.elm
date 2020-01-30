@@ -14,7 +14,6 @@ import Parser exposing ((|.))
 import Pretty
 
 
-
 --MAIN
 
 
@@ -114,7 +113,8 @@ view : Model -> Html Msg
 view model =
     div
         [ css [ backgroundColor (rgb 244 239 217), height (px 1024) ] ]
-        [ div []
+        [ img [src "factor.png", css [width (px 100), height (px 100)]][],
+        div []
             (model.current.state.stack
                 |> List.map
                     (\lit ->
