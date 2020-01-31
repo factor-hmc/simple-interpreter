@@ -44,7 +44,11 @@ init =
     }
 
 
-numericBinaryOp : (Float -> Float -> Float) -> (Int -> Int -> Int) -> Stack -> Result String Stack
+numericBinaryOp :
+    (Float -> Float -> Float)
+    -> (Int -> Int -> Int)
+    -> Stack
+    -> Result String Stack
 numericBinaryOp floatOp intOp stack =
     case stack of
         (Int x) :: (Int y) :: rest ->
@@ -187,27 +191,19 @@ evalWords state =
 
 evalWhile : State -> List Word -> List Word -> Result String State
 evalWhile state body pred =
-    let
-        predState =
-            evalWords state pred
-    in
-    case predState of
-        Ok st ->
-            case st.stack of
-                b :: rest ->
-                    if toBool b then
-                        case evalWords { st | stack = rest } body of
-                            Ok newStack ->
-                                evalWhile newStack body pred
+    evalWords state pred
+        |> Result.andThen
+            (\st ->
+                case st.stack of
+                    b :: rest ->
+                        if toBool b then
+                            evalWords { st | stack = rest } body
+                                |> Result.andThen
+                                    (\newStack -> evalWhile newStack body pred)
 
-                            Err e ->
-                                Err e
+                        else
+                            Ok { st | stack = rest }
 
-                    else
-                        Ok { st | stack = rest }
-
-                [] ->
-                    Err "while: empty stack."
-
-        Err e ->
-            Err e
+                    [] ->
+                        Err "while: empty stack."
+            )

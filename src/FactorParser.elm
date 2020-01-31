@@ -33,8 +33,16 @@ literal =
     lex <|
         oneOf
             [ num
-            , between (symbol "{") (symbol "}") (lazy <| \_ -> many literal) |> map Array
-            , between (symbol "[") (symbol "]") (lazy <| \_ -> words) |> map Quotation
+            , between
+                (symbol "{")
+                (symbol "}")
+                (lazy <| \() -> many literal)
+                |> map Array
+            , between
+                (symbol "[")
+                (symbol "]")
+                (lazy <| \() -> words)
+                |> map Quotation
             , succeed F |. keyword "f"
             , succeed T |. keyword "t"
             ]

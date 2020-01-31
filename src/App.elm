@@ -1,35 +1,27 @@
 module App exposing (..)
 
 import Browser
-import Css exposing (..)
+import Browser.Dom
+import Browser.Navigation
 import Dict
 import Eval
 import FactorParser
 import Html.Styled as H exposing (..)
-import Html.Styled.Attributes as A exposing (css, href, placeholder, src, value)
+import Html.Styled.Attributes as A exposing (css, disabled, href, id, placeholder, src, value)
 import Html.Styled.Events exposing (on, onClick, onInput)
 import Json.Decode as J
 import Lang exposing (..)
 import Parser exposing ((|.))
 import Pretty
-
-
---MAIN
-
-
-main =
-    Browser.sandbox { init = init, update = update, view = view >> toUnstyled }
-
-
-
---MODEL
+import Styles
+import Task
+import Url
 
 
 type alias Snapshot =
     { input : String
     , state : Eval.State
-    , --not sure
-      output : String
+    , output : String
     }
 
 
@@ -45,23 +37,32 @@ type Msg
     | Nop
 
 
-init : Model
-init =
-    { history = []
-    , current =
-        { input = ""
-        , state = Eval.init
-        , output = ""
+main =
+    Browser.application
+        { init = init
+        , onUrlChange = \_ -> Nop
+        , onUrlRequest = \_ -> Nop
+        , subscriptions = \_ -> Sub.none
+        , update = update
+        , view = view >> toUnstyled >> List.singleton >> Browser.Document "Factor"
         }
-    }
 
 
+init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
+init () _ _ =
+    ( { history = []
+      , current =
+            { input = ""
+            , state = Eval.init
+            , output = ""
+            }
+      }
+    , Browser.Dom.focus "prompt"
+        |> Task.attempt (always Nop)
+    )
 
---UPDATE
---simply updating the type
 
-
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         setInput str snap =
@@ -69,12 +70,10 @@ update msg model =
     in
     case msg of
         Input str ->
-            { model
-                | current = setInput str model.current
-            }
+            ( { model | current = setInput str model.current }, Cmd.none )
 
         Nop ->
-            model
+            ( model, Cmd.none )
 
         Enter ->
             case Parser.run (FactorParser.words |. Parser.end) model.current.input of
@@ -83,7 +82,7 @@ update msg model =
                         _ =
                             Debug.log "parse error" e
                     in
-                    model
+                    ( model, Cmd.none )
 
                 Ok words ->
                     case Eval.evalWords model.current.state words of
@@ -92,55 +91,96 @@ update msg model =
                                 _ =
                                     Debug.log "eval error" r
                             in
-                            model
+                            ( model, Cmd.none )
 
-                        Ok sta ->
-                            { model
+                        Ok st ->
+                            ( { model
                                 | history = model.current :: model.history
                                 , current =
                                     { input = ""
-                                    , state = sta
+                                    , state = st
                                     , output = ""
                                     }
-                            }
+                              }
+                            , Cmd.none
+                            )
 
 
+viewSnapshot : Bool -> Snapshot -> Html Msg
+viewSnapshot active snap =
+    div
+        [ css Styles.snapshot ]
+        [ div
+            [ css Styles.output ]
+            [ text snap.output ]
+        , case snap.state.stack of
+            [] ->
+                text ""
 
---VIEW
+            st ->
+                div
+                    [ css Styles.stack ]
+                    (st
+                        |> List.reverse
+                        |> List.map
+                            (div
+                                [ css Styles.lit ]
+                                << (Pretty.showLiteral >> text >> List.singleton)
+                            )
+                    )
+        , div
+            [ css Styles.inputLine ]
+            [ input
+                ((case active of
+                    True ->
+                        [ id "prompt"
+                        , onInput Input
+                        , on "keydown"
+                            (J.field "key" J.string
+                                |> J.map
+                                    (\key ->
+                                        case key of
+                                            "Enter" ->
+                                                Enter
+
+                                            _ ->
+                                                Nop
+                                    )
+                            )
+                        ]
+
+                    False ->
+                        [ disabled True ]
+                 )
+                    ++ [ value snap.input
+                       , css Styles.input
+                       ]
+                )
+                []
+            ]
+        ]
 
 
 view : Model -> Html Msg
 view model =
-    div
-        [ css [ backgroundColor (rgb 244 239 217), height (px 1024) ] ]
-        [ img [src "factor.png", css [width (px 100), height (px 100)]][],
-        div []
-            (model.current.state.stack
-                |> List.map
-                    (\lit ->
-                        div
-                            [ css [ marginLeft (px 512) ] ]
-                            [ text (Pretty.showLiteral lit)
-                            ]
-                    )
-            )
-        , input
-            [ css [ marginLeft (px 512) ]
-            , placeholder "Input Factor Code"
-            , value model.current.input
-            , onInput Input
-            , on "keydown"
-                (J.field "key" J.string
-                    |> J.map
-                        (\key ->
-                            case key of
-                                "Enter" ->
-                                    Enter
-
-                                _ ->
-                                    Nop
-                        )
-                )
-            ]
+    main_
+        [ css Styles.main_ ]
+        [ img
+            [ src "logo.svg", css Styles.logo ]
             []
+        , div
+            [ id "terminal"
+            , css Styles.terminal
+            ]
+            [ div [ css Styles.terminalScroll ]
+                [ div [ css Styles.terminalContent ]
+                    [ div []
+                        (model.history
+                            |> List.reverse
+                            |> List.map (viewSnapshot False)
+                        )
+                    , viewSnapshot True model.current
+                    ]
+                ]
+            ]
         ]
