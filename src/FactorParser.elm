@@ -33,31 +33,65 @@ literal =
     lex <|
         oneOf
             [ num
-            , between
-                (symbol "{")
-                (symbol "}")
-                (lazy <| \() -> many literal)
-                |> map Array
-            , between
-                (symbol "[")
-                (symbol "]")
-                (lazy <| \() -> words)
-                |> map Quotation
+            , succeed Array
+                |= between
+                    (symbol "{")
+                    (symbol "}")
+                    (lazy <| \() -> many literal)
+            , succeed Quotation
+                |= between
+                    (symbol "[")
+                    (symbol "]")
+                    (lazy <| \() -> words)
             , succeed F |. keyword "f"
             , succeed T |. keyword "t"
             ]
 
+effect_ : Parser Effect
+effect_ =
+    let
+        var = variable
+              { start = not << isWhitespace
+              , inner = not << isWhitespace
+              , reserved = Set.fromList [ "(", ")", "--" ]
+              }
+    in
+    lex <|
+        succeed Effect
+            |. symbol "("
+            |. spaces
+            |= many var
+            |. spaces
+            |. symbol "--"
+            |. spaces
+            |= many var
+            |. spaces
+            |. symbol ")"
 
-word : Parser Word
+definition : Parser Word
+definition =
+    lex <|
+        succeed Definition
+            |. symbol ":"
+            |. spaces
+            |= word
+            |. spaces
+            |= effect_
+            |. spaces
+            |= words
+            |. spaces
+            |. symbol ";"
+
+
+word : Parser String
 word =
     lex <|
-        map Word <|
-            variable
-                { start = not << isWhitespace
-                , inner = not << isWhitespace
-                , reserved = Set.fromList [ "]", "[", "}", "{" ]
-                }
-                |. spaces
+        variable
+            { start = not << isWhitespace
+            , inner = not << isWhitespace
+            , reserved = Set.fromList [ "]", "[", "}", "{", ":", ";" ]
+            }
+            |. spaces
 
 
 words : Parser (List Word)
@@ -65,7 +99,8 @@ words =
     many
         (oneOf
             [ map (Builtin << Push) literal
-            , word
+            , map Word word
+            , lazy <| \() -> definition
             ]
         )
         |. spaces

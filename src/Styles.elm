@@ -56,7 +56,7 @@ inputLine =
     [ before
           [ property "content" "'IN: scratchpad'"
           , backgroundColor <| rgb 255 179 179
-          , marginRight <| rem 0.25
+          , marginRight <| rem 0.5
           ]
     , displayFlex
     , alignItems baseline

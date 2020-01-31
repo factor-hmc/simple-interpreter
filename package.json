@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Factor programming language - online platform",
   "scripts": {
-    "dev": "elm reactor src/App.elm",
+    "dev": "elm reactor",
     "build": "elm make src/App.elm --output=build/index.html && cp -r src/assets build/assets"
   },
   "repository": {

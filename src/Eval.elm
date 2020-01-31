@@ -183,6 +183,9 @@ eval state w =
                 |> Maybe.map (evalWords state)
                 |> Maybe.withDefault (Err <| "Unimplemented word " ++ word)
 
+        Definition name _ body ->
+            Ok { state | lookup = Dict.insert name body state.lookup }
+
 
 evalWords : State -> List Word -> Result String State
 evalWords state =

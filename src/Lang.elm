@@ -27,8 +27,14 @@ type Builtin
   | While
   | Clear
 
+type alias Effect =
+    { ins : List String
+    , outs : List String
+    }
+
 type Word
     = Word String
+    | Definition String Effect (List Word)
     | Builtin Builtin
 
 type alias Stack = List Literal

@@ -75,6 +75,15 @@ showBuiltin b =
             "clear"
 
 
+showEffect : Effect -> String
+showEffect eff =
+    "( "
+        ++ String.join " " eff.ins
+        ++ " -- "
+        ++ String.join " " eff.outs
+        ++ " )"
+
+
 showWord : Word -> String
 showWord word =
     case word of
@@ -83,3 +92,11 @@ showWord word =
 
         Builtin b ->
             showBuiltin b
+
+        Definition name eff body ->
+            ": "
+                ++ name
+                ++ " "
+                ++ showEffect eff
+                ++ " "
+                ++ (List.map showWord body |> String.join " ")
