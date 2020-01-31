@@ -166,7 +166,7 @@ view model =
     main_
         [ css Styles.main_ ]
         [ img
-            [ src "logo.svg", css Styles.logo ]
+            [ src "assets/logo.svg", css Styles.logo ]
             []
         , div
             [ id "terminal"
