@@ -70,6 +70,7 @@ input =
     , fontSize inherit
     , lineHeight inherit
     , color inherit
+    , flexGrow <| num 1
     ]
 
 output : List Style
