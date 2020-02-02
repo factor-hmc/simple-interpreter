@@ -2,19 +2,33 @@ module App exposing (..)
 
 import Browser
 import Browser.Dom
+import Browser.Events exposing (onAnimationFrame)
 import Browser.Navigation
 import Dict
 import Eval
 import FactorParser
 import Html.Styled as H exposing (..)
 import Html.Styled.Attributes as A exposing (css, disabled, href, id, placeholder, src, value)
-import Html.Styled.Events exposing (on, onClick, onInput)
+import Html.Styled.Events
+    exposing
+        ( on
+        , onClick
+        , onInput
+        , onMouseDown
+        , onMouseOut
+        , onMouseOver
+        , onMouseUp
+        )
 import Json.Decode as J
 import Lang exposing (..)
+import Logo
 import Parser exposing ((|.))
 import Pretty
 import Styles
+import Svg.Styled exposing (path, svg)
+import Svg.Styled.Attributes exposing (d, fill)
 import Task
+import Time
 import Url
 
 
@@ -25,15 +39,60 @@ type alias Snapshot =
     }
 
 
+type alias Anim =
+    { init : Float
+    , current : Float
+    , target : Float
+    , start : Float
+    , duration : Float
+    }
+
+
+resetAnim : Float -> Float -> Float -> Anim -> Anim
+resetAnim time duration target anim =
+    { anim
+        | init = anim.current
+        , target = target
+        , start = time
+        , duration = duration
+    }
+
+
+updateAnim : Float -> Anim -> Anim
+updateAnim time anim =
+    if time < anim.start || time > anim.start + anim.duration then
+        anim
+
+    else
+        { anim
+            | current =
+                anim.init
+                    + (time - anim.start)
+                    / anim.duration
+                    * (anim.target - anim.init)
+        }
+
+
 type alias Model =
     { history : List Snapshot
     , current : Snapshot
+    , time : Float
+    , logo : Anim
     }
+
+
+type Logo
+    = Hover
+    | Press
+    | Release
+    | Out
 
 
 type Msg
     = Input String
     | Enter
+    | Frame Float
+    | Logo Logo
     | Nop
 
 
@@ -42,10 +101,15 @@ main =
         { init = init
         , onUrlChange = \_ -> Nop
         , onUrlRequest = \_ -> Nop
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         , update = update
         , view = view >> toUnstyled >> List.singleton >> Browser.Document "Factor"
         }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    onAnimationFrame <| \t -> Frame <| toFloat (Time.posixToMillis t) / 1000
 
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
@@ -55,6 +119,14 @@ init () _ _ =
             { input = ""
             , state = Eval.init
             , output = ""
+            }
+      , time = 0
+      , logo =
+            { init = 0
+            , current = 0
+            , target = 0
+            , start = 0
+            , duration = 1
             }
       }
     , Browser.Dom.focus "prompt"
@@ -74,6 +146,36 @@ update msg model =
 
         Nop ->
             ( model, Cmd.none )
+
+        Frame t ->
+            ( { model
+                | time = t
+                , logo = updateAnim model.time model.logo
+              }
+            , Cmd.none
+            )
+
+        Logo e ->
+            ( let
+                ( offset, dur, target ) =
+                    case e of
+                        Hover ->
+                            ( 5, 0.5, -0.4 )
+
+                        Press ->
+                            ( 0, 0.1, 0.4 )
+
+                        Release ->
+                            ( 0, 0.1, 0 )
+
+                        Out ->
+                            ( 0, 0.1, 0 )
+              in
+              { model
+                | logo = resetAnim (model.time + offset) dur target model.logo
+              }
+            , Cmd.none
+            )
 
         Enter ->
             case Parser.run (FactorParser.words |. Parser.end) model.current.input of
@@ -165,9 +267,13 @@ view : Model -> Html Msg
 view model =
     main_
         [ css Styles.main_ ]
-        [ img
-            [ src "assets/logo.svg", css Styles.logo ]
-            []
+        [ div
+            [ onMouseOver <| Logo Hover
+            , onMouseDown <| Logo Press
+            , onMouseUp <| Logo Release
+            , onMouseOut <| Logo Out
+            ]
+            [ Logo.view model.logo.current ]
         , div
             [ id "terminal"
             , css Styles.terminal
