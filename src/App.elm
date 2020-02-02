@@ -60,17 +60,21 @@ resetAnim time duration target anim =
 
 updateAnim : Float -> Anim -> Anim
 updateAnim time anim =
-    if time < anim.start || time > anim.start + anim.duration then
-        anim
+    { anim
+        | current =
+            anim.init
+                + (if time < anim.start then
+                    0
 
-    else
-        { anim
-            | current =
-                anim.init
-                    + (time - anim.start)
-                    / anim.duration
-                    * (anim.target - anim.init)
-        }
+                   else if time > anim.start + anim.duration then
+                    1
+
+                   else
+                    (time - anim.start)
+                        / anim.duration
+                  )
+                * (anim.target - anim.init)
+    }
 
 
 type alias Model =
