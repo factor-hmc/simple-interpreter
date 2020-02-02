@@ -184,19 +184,11 @@ update msg model =
         Enter ->
             case Parser.run (FactorParser.words |. Parser.end) model.current.input of
                 Err e ->
-                    let
-                        _ =
-                            Debug.log "parse error" e
-                    in
                     ( model, Cmd.none )
 
                 Ok words ->
                     case Eval.evalWords model.current.state words of
                         Err r ->
-                            let
-                                _ =
-                                    Debug.log "eval error" r
-                            in
                             ( model, Cmd.none )
 
                         Ok st ->
