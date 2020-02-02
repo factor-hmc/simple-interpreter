@@ -71,6 +71,8 @@ input =
     , lineHeight inherit
     , color inherit
     , flexGrow <| num 1
+    , outline none
+    , boxShadow none
     ]
 
 output : List Style
