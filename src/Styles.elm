@@ -83,6 +83,11 @@ input =
     , flexGrow <| num 1
     , outline none
     , boxShadow none
+    , property "caret-color" "red"
+    , selection
+        [ backgroundColor <| rgb 204 204 255
+        , color inherit
+        ]
     ]
 
 
