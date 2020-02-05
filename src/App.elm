@@ -97,6 +97,7 @@ type Msg
     | Enter
     | Frame Float
     | Logo Logo
+    | Focus
     | Nop
 
 
@@ -114,6 +115,11 @@ main =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     onAnimationFrame <| \t -> Frame <| toFloat (Time.posixToMillis t) / 1000
+
+focusPrompt : Cmd Msg
+focusPrompt =
+    Browser.Dom.focus "prompt"
+        |> Task.attempt (always Nop)
 
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
@@ -133,8 +139,7 @@ init () _ _ =
             , duration = 1
             }
       }
-    , Browser.Dom.focus "prompt"
-        |> Task.attempt (always Nop)
+    , focusPrompt
     )
 
 
@@ -158,6 +163,9 @@ update msg model =
               }
             , Cmd.none
             )
+
+        Focus ->
+            ( model, focusPrompt )
 
         Logo e ->
             ( let
@@ -273,6 +281,7 @@ view model =
         , div
             [ id "terminal"
             , css Styles.terminal
+            , onClick Focus
             ]
             [ div [ css Styles.terminalScroll ]
                 [ div [ css Styles.terminalContent ]
