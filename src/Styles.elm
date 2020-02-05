@@ -16,6 +16,12 @@ main_ =
     , backgroundColor <| rgb 53 53 53
     ]
 
+logoCircle : List Style
+logoCircle =
+    [ borderRadius <| pct 50
+    , overflow hidden
+    ]
+
 logo : List Style
 logo =
     [ width <| rem 8
@@ -37,11 +43,13 @@ terminal =
     , boxShadow4 (px 0) (rem 0.25) (rem 0.5) (rgb 25 25 25)
     ]
 
+
 terminalScroll : List Style
 terminalScroll =
     [ flexGrow <| num 1
     , overflowY scroll
     ]
+
 
 terminalContent : List Style
 terminalContent =
@@ -54,19 +62,21 @@ terminalContent =
 inputLine : List Style
 inputLine =
     [ before
-          [ property "content" "'IN: scratchpad'"
-          , backgroundColor <| rgb 255 179 179
-          , marginRight <| rem 0.5
-          ]
+        [ property "content" "'IN: scratchpad'"
+        , backgroundColor <| rgb 255 179 179
+        , marginRight <| rem 0.5
+        ]
     , displayFlex
     , alignItems baseline
     ]
+
 
 input : List Style
 input =
     [ borderStyle none
     , padding <| rem 0
     , backgroundColor transparent
+    , fontFamily inherit
     , fontSize inherit
     , lineHeight inherit
     , color inherit
@@ -75,17 +85,18 @@ input =
     , boxShadow none
     ]
 
+
 output : List Style
 output =
-    [
-    ]
+    []
+
 
 stack : List Style
 stack =
     [ before
-          [ property "content" "'--- Data stack:'"
-          , color <| rgb 128 128 128
-          ]
+        [ property "content" "'--- Data stack:'"
+        , color <| rgb 128 128 128
+        ]
     , marginTop <| em 1.25
     ]
 
@@ -93,6 +104,7 @@ stack =
 lit : List Style
 lit =
     []
+
 
 snapshot : List Style
 snapshot =

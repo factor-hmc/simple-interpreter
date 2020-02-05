@@ -116,6 +116,7 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     onAnimationFrame <| \t -> Frame <| toFloat (Time.posixToMillis t) / 1000
 
+
 focusPrompt : Cmd Msg
 focusPrompt =
     Browser.Dom.focus "prompt"
@@ -272,12 +273,16 @@ view model =
     main_
         [ css Styles.main_ ]
         [ div
-            [ onMouseOver <| Logo Hover
-            , onMouseDown <| Logo Press
-            , onMouseUp <| Logo Release
-            , onMouseOut <| Logo Out
+            []
+            [ div
+                [ onMouseOver <| Logo Hover
+                , onMouseDown <| Logo Press
+                , onMouseUp <| Logo Release
+                , onMouseOut <| Logo Out
+                , css Styles.logoCircle
+                ]
+                [ Logo.view model.logo.current ]
             ]
-            [ Logo.view model.logo.current ]
         , div
             [ id "terminal"
             , css Styles.terminal
