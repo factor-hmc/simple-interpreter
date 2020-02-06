@@ -1,5 +1,8 @@
 module App exposing (..)
 
+--import Styles
+
+import Book
 import Browser
 import Browser.Dom
 import Browser.Events exposing (onAnimationFrame)
@@ -10,11 +13,13 @@ import FactorParser
 import Html.Styled as H exposing (..)
 import Html.Styled.Attributes as A
     exposing
-        ( css
+        ( class
+        , css
         , disabled
         , href
         , id
         , placeholder
+        , property
         , src
         , value
         )
@@ -28,12 +33,13 @@ import Html.Styled.Events
         , onMouseOver
         , onMouseUp
         )
+import Http
 import Json.Decode as J
+import Json.Encode
 import Lang exposing (..)
 import Logo
 import Parser exposing ((|.))
 import Pretty
-import Styles
 import Svg.Styled exposing (path, svg)
 import Svg.Styled.Attributes exposing (d, fill)
 import Task
@@ -89,6 +95,7 @@ updateAnim time anim =
 type alias Model =
     { history : List Snapshot
     , current : Snapshot
+    , book : Book.Book
     , time : Float
     , logo : Anim
     }
@@ -107,6 +114,7 @@ type Msg
     | Frame Float
     | Logo Logo
     | Focus
+    | Load (Result Http.Error String)
     | Nop
 
 
@@ -123,7 +131,12 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    onAnimationFrame <| \t -> Frame <| toFloat (Time.posixToMillis t) / 1000
+    Sub.none
+
+
+
+--onAnimationFrame <|
+--    \t -> Frame <| toFloat (Time.posixToMillis t) / 1000
 
 
 focusPrompt : Cmd Msg
@@ -148,8 +161,15 @@ init () _ _ =
             , start = 0
             , duration = 1
             }
+      , book = Book.init
       }
-    , focusPrompt
+    , Cmd.batch
+        [ focusPrompt
+        , Http.get
+            { url = "https://factor-book.netlify.com/json/README.json"
+            , expect = Http.expectString Load
+            }
+        ]
     )
 
 
@@ -199,6 +219,12 @@ update msg model =
             , Cmd.none
             )
 
+        Load (Err _) ->
+            ( model, Cmd.none )
+
+        Load (Ok s) ->
+            ( { model | book = Book.update s model.book }, Cmd.none )
+
         Enter ->
             case Parser.run (FactorParser.words |. Parser.end) model.current.input of
                 Err e ->
@@ -225,9 +251,9 @@ update msg model =
 viewSnapshot : Bool -> Snapshot -> Html Msg
 viewSnapshot active snap =
     div
-        [ css Styles.snapshot ]
+        [ class "snapshot" ]
         [ div
-            [ css Styles.output ]
+            [ class "output" ]
             [ text snap.output ]
         , case snap.state.stack of
             [] ->
@@ -235,17 +261,17 @@ viewSnapshot active snap =
 
             st ->
                 div
-                    [ css Styles.stack ]
+                    [ class "stack" ]
                     (st
                         |> List.reverse
                         |> List.map
                             (div
-                                [ css Styles.lit ]
+                                [ class "stack-element" ]
                                 << (Pretty.showLiteral >> text >> List.singleton)
                             )
                     )
         , div
-            [ css Styles.inputLine ]
+            [ class "input" ]
             [ input
                 ((case active of
                     True ->
@@ -268,9 +294,7 @@ viewSnapshot active snap =
                     False ->
                         [ disabled True ]
                  )
-                    ++ [ value snap.input
-                       , css Styles.input
-                       ]
+                    ++ [ value snap.input ]
                 )
                 []
             ]
@@ -280,33 +304,34 @@ viewSnapshot active snap =
 view : Model -> Html Msg
 view model =
     main_
-        [ css Styles.main_ ]
+        [ id "main" ]
         [ div
-            [ css Styles.sidebar ]
+            [ id "sidebar" ]
             [ div
                 [ onMouseOver <| Logo Hover
                 , onMouseDown <| Logo Press
                 , onMouseUp <| Logo Release
                 , onMouseOut <| Logo Out
-                , css Styles.logoCircle
+                , id "logo"
                 ]
                 [ Logo.view model.logo.current ]
+            , nav
+                [ id "menu" ]
+                [ div
+                    [ id "summary" ]
+                    [ Book.viewSummary model.book.summary ]
+                ]
             ]
         , div
-            [ css Styles.book ]
-            [ iframe
-                [ css Styles.bookContent
-                , src "https://factor-book.netlify.com"
-                ]
-                []
+            [ id "book" ]
+            [ Book.viewPage model.book.page
             ]
         , div
             [ id "terminal"
-            , css Styles.terminal
             , onClick Focus
             ]
-            [ div [ css Styles.terminalScroll ]
-                [ div [ css Styles.terminalContent ]
+            [ div [ id "terminal-scroll" ]
+                [ div [ id "terminal-content" ]
                     [ div []
                         (model.history
                             |> List.reverse

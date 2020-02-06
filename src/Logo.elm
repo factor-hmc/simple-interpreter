@@ -1,6 +1,6 @@
 module Logo exposing (..)
 
-import Styles
+--import Styles
 import Svg.Styled exposing (..)
 import Svg.Styled.Attributes
     exposing
@@ -415,7 +415,7 @@ raptor t =
 view : Float -> Svg msg
 view t =
     svg
-        [ viewBox "0 0 115.02 115.02", css Styles.logo ]
+        [ viewBox "0 0 115.02 115.02"]
         [ defs
             []
             [ radialGradient
