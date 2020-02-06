@@ -11,8 +11,12 @@ main_ =
     , right <| rem 0
     , bottom <| rem 0
     , displayFlex
-    , padding2 (rem 4) (rem 0)
     , justifyContent center
+    ]
+
+sidebar : List Style
+sidebar =
+    [ padding <| rem 1
     , backgroundColor <| rgb 53 53 53
     ]
 
@@ -24,23 +28,41 @@ logoCircle =
 
 logo : List Style
 logo =
-    [ width <| rem 8
+    [ width <| rem 6
     , alignSelf flexStart
     ]
 
+bookContent : List Style
+bookContent =
+    [ position absolute
+    , left <| rem 0
+    , top <| rem 0
+    , height <| pct 100
+    , width <| pct 100
+    , padding <| rem 0
+    , margin <| rem 0
+    , borderStyle none
+    ]
+
+book : List Style
+book =
+    [ flexGrow <| num 1
+    , position relative
+    ]
 
 terminal : List Style
 terminal =
     [ fontFamilies [ "Roboto Mono", "monospace" ]
     , fontSize <| rem 0.875
-    , minWidth <| rem 60
-    , backgroundColor <| rgb 240 240 240
-    , marginLeft <| rem 1
+    , minWidth <| rem 40
+    --, backgroundColor <| rgb 240 240 240
     , lineHeight <| em 1.25
     , borderRadius <| rem 0.25
     , overflow hidden
     , displayFlex
-    , boxShadow4 (px 0) (rem 0.25) (rem 0.5) (rgb 25 25 25)
+    , border3 (px 1) solid (rgb 180 180 180)
+    --, boxShadow4 (rem 0) (rem 0) (rem 0.25) (rgb 25 25 25)
+    , margin <| rem 2
     ]
 
 

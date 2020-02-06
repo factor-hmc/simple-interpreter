@@ -8,7 +8,16 @@ import Dict
 import Eval
 import FactorParser
 import Html.Styled as H exposing (..)
-import Html.Styled.Attributes as A exposing (css, disabled, href, id, placeholder, src, value)
+import Html.Styled.Attributes as A
+    exposing
+        ( css
+        , disabled
+        , href
+        , id
+        , placeholder
+        , src
+        , value
+        )
 import Html.Styled.Events
     exposing
         ( on
@@ -273,7 +282,7 @@ view model =
     main_
         [ css Styles.main_ ]
         [ div
-            []
+            [ css Styles.sidebar ]
             [ div
                 [ onMouseOver <| Logo Hover
                 , onMouseDown <| Logo Press
@@ -282,6 +291,14 @@ view model =
                 , css Styles.logoCircle
                 ]
                 [ Logo.view model.logo.current ]
+            ]
+        , div
+            [ css Styles.book ]
+            [ iframe
+                [ css Styles.bookContent
+                , src "https://factor-book.netlify.com"
+                ]
+                []
             ]
         , div
             [ id "terminal"
