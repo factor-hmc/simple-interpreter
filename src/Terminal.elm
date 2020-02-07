@@ -1,6 +1,6 @@
 module Terminal exposing (..)
 
-import Browser.Dom
+import Browser.Dom as Dom
 import Eval
 import FactorParser
 import Html.Styled as Html exposing (..)
@@ -73,7 +73,13 @@ update msg mod =
                         }
                     )
                 |> Result.withDefault mod
-            , Cmd.none
+            , Dom.getViewportOf "terminal-scroll"
+                |> Task.andThen
+                    (.scene
+                        >> .height
+                        >> Dom.setViewportOf "terminal-scroll" 0
+                    )
+                |> Task.attempt (always Nop)
             )
 
         Focus ->
@@ -85,8 +91,22 @@ update msg mod =
 
 focusPrompt : Cmd Msg
 focusPrompt =
-    Browser.Dom.focus "prompt"
+    Dom.focus "prompt"
         |> Task.attempt (always Nop)
+
+
+eventKey : JD.Decoder Msg
+eventKey =
+    JD.field "key" JD.string
+        |> JD.map
+            (\key ->
+                case key of
+                    "Enter" ->
+                        Enter
+
+                    _ ->
+                        Nop
+            )
 
 
 viewSnapshot : Bool -> Snapshot -> Html Msg
@@ -118,18 +138,7 @@ viewSnapshot active snap =
                     True ->
                         [ id "prompt"
                         , Events.onInput Input
-                        , on "keydown"
-                            (JD.field "key" JD.string
-                                |> JD.map
-                                    (\key ->
-                                        case key of
-                                            "Enter" ->
-                                                Enter
-
-                                            _ ->
-                                                Nop
-                                    )
-                            )
+                        , on "keydown" eventKey
                         ]
 
                     False ->
