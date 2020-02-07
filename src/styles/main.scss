@@ -15,8 +15,6 @@
   flex-direction: column;
 
   nav {
-
-
     #summary h1 {
       background: #f8f8f8;
       color: #353535;
@@ -32,6 +30,9 @@
     h1 {
       padding: .5rem 1rem;
       margin: 0;
+      text-transform: uppercase;
+      font-size: inherit;
+      font-weight: 800;
 
       cursor: pointer;
 
@@ -48,9 +49,10 @@
 #title {
   display: flex;
   align-items: center;
+  margin: 1rem;
+  margin-bottom: .5rem;
 
   #logo {
-    margin: 1rem;
     margin-right: .5rem;
     border-radius: 50%;
     overflow: hidden;
@@ -140,12 +142,53 @@
       margin: 0;
     }
 
-    code {
-      font-family: 'Roboto Mono', monospace;
+    code, .code-block {
+      font: .875rem 'Roboto Mono', monospace;
       border: 1px solid #aaa;
       border-radius: 2px;
-      padding: 0 .125em;
+      background: #eee;
+
     }
+
+    code {
+      padding: .125em .25em;
+    }
+
+    pre {
+      padding: .5em;
+      code {
+        border: none;
+        background: none;
+        padding: none;
+      }
+    }
+
+    .code-block {
+      position: relative;
+
+      button {
+        color: #777;
+        position: absolute;
+        top: -.5em;
+        right: -.5em;
+        padding: .125em .25em;
+        background: #fff;
+        border-radius: 2px;
+        border: 1px solid #aaa;
+        outline: none;
+        cursor: pointer;
+
+        &::-moz-focus-inner {
+          border: none;
+        }
+
+      }
+
+      pre {
+        margin: 0;
+      }
+    }
+
   }
 
 }

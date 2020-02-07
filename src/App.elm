@@ -251,7 +251,7 @@ view model =
             ]
         , div
             [ id "book" ]
-            [ Book.viewPage model.book.page
+            [ Book.viewPage model.book.page |> Html.map Terminal
             ]
         , Terminal.view model.terminal |> Html.map Terminal
         ]

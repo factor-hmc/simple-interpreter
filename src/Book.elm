@@ -1,11 +1,12 @@
 module Book exposing (..)
 
 import Html.Parser
-import Html.Parser.Util
-import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (id, property)
+import Html.Styled as Html exposing (..)
+import Html.Styled.Attributes as Attr exposing (id, property)
+import Html.Styled.Events as Ev
 import Json.Decode as JD exposing (..)
 import Json.Encode
+import Terminal
 
 
 type alias File =
@@ -119,15 +120,68 @@ viewSummary =
                         )
                     ]
             )
-            << .parts
+        << .parts
 
 
-viewPage : Page -> Html msg
+textContent : Html.Parser.Node -> String
+textContent n =
+    case n of
+        Html.Parser.Text s ->
+            s
+
+        Html.Parser.Element _ _ c ->
+            List.map textContent c |> String.concat
+
+        Html.Parser.Comment _ ->
+            ""
+
+
+viewNode : Html.Parser.Node -> Html Terminal.Msg
+viewNode n =
+    let
+        attr ( k, v ) =
+            property k <| Json.Encode.string v
+
+        elem t a c =
+            Html.node t (List.map attr a) <| List.map viewNode c
+    in
+    case n of
+        Html.Parser.Text s ->
+            Html.text s
+
+        Html.Parser.Element t a c ->
+            case t of
+                "pre" ->
+                    Html.div
+                        [ Attr.class "code-block" ]
+                        [ Html.pre [] <| List.map viewNode c
+                        , button
+                            [ Ev.onClick <|
+                                Terminal.Input <|
+                                    (List.map textContent c |> String.concat)
+                            ]
+                            [ text "➦" ]
+                        ]
+
+                _ ->
+                    elem t a c
+
+        Html.Parser.Comment _ ->
+            Html.text ""
+
+
+
+--viewContent : List Html.Parser.Node -> List (Html Terminal.Msg)
+--viewContent =
+--    List.map viewNode
+
+
+viewPage : Page -> Html Terminal.Msg
 viewPage p =
     div
         [ id "book-content" ]
         (Html.Parser.run p.content
-            |> Result.map (Html.Parser.Util.toVirtualDom >> List.map fromUnstyled)
+            |> Result.map (List.map viewNode)
             |> Result.withDefault []
         )
 
