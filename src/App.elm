@@ -10,7 +10,7 @@ import Browser.Navigation
 import Dict
 import Eval
 import FactorParser
-import Html.Styled as H exposing (..)
+import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes as A
     exposing
         ( class
@@ -43,6 +43,7 @@ import Pretty
 import Svg.Styled exposing (path, svg)
 import Svg.Styled.Attributes exposing (d, fill)
 import Task
+import Terminal
 import Time
 import Url
 
@@ -93,8 +94,7 @@ updateAnim time anim =
 
 
 type alias Model =
-    { history : List Snapshot
-    , current : Snapshot
+    { terminal : Terminal.Model
     , book : Book.Book
     , time : Float
     , logo : Anim
@@ -109,11 +109,9 @@ type Logo
 
 
 type Msg
-    = Input String
-    | Enter
-    | Frame Float
+    = Frame Float
+    | Terminal Terminal.Msg
     | Logo Logo
-    | Focus
     | Load (Result Http.Error String)
     | Nop
 
@@ -139,20 +137,13 @@ subscriptions _ =
 --    \t -> Frame <| toFloat (Time.posixToMillis t) / 1000
 
 
-focusPrompt : Cmd Msg
-focusPrompt =
-    Browser.Dom.focus "prompt"
-        |> Task.attempt (always Nop)
-
-
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init () _ _ =
-    ( { history = []
-      , current =
-            { input = ""
-            , state = Eval.init
-            , output = ""
-            }
+    let
+        ( term, termCmd ) =
+            Terminal.init
+    in
+    ( { terminal = term
       , time = 0
       , logo =
             { init = 0
@@ -164,7 +155,7 @@ init () _ _ =
       , book = Book.init
       }
     , Cmd.batch
-        [ focusPrompt
+        [ termCmd |> Cmd.map Terminal
         , Http.get
             { url = "https://factor-book.netlify.com/json/README.json"
             , expect = Http.expectString Load
@@ -180,12 +171,6 @@ update msg model =
             { snap | input = str }
     in
     case msg of
-        Input str ->
-            ( { model | current = setInput str model.current }, Cmd.none )
-
-        Nop ->
-            ( model, Cmd.none )
-
         Frame t ->
             ( { model
                 | time = t
@@ -194,8 +179,12 @@ update msg model =
             , Cmd.none
             )
 
-        Focus ->
-            ( model, focusPrompt )
+        Terminal m ->
+            let
+                ( tm, c ) =
+                    Terminal.update m model.terminal
+            in
+            ( { model | terminal = tm }, c |> Cmd.map Terminal )
 
         Logo e ->
             ( let
@@ -225,80 +214,8 @@ update msg model =
         Load (Ok s) ->
             ( { model | book = Book.update s model.book }, Cmd.none )
 
-        Enter ->
-            case Parser.run (FactorParser.words |. Parser.end) model.current.input of
-                Err e ->
-                    ( model, Cmd.none )
-
-                Ok words ->
-                    case Eval.evalWords model.current.state words of
-                        Err r ->
-                            ( model, Cmd.none )
-
-                        Ok st ->
-                            ( { model
-                                | history = model.current :: model.history
-                                , current =
-                                    { input = ""
-                                    , state = st
-                                    , output = ""
-                                    }
-                              }
-                            , Cmd.none
-                            )
-
-
-viewSnapshot : Bool -> Snapshot -> Html Msg
-viewSnapshot active snap =
-    div
-        [ class "snapshot" ]
-        [ div
-            [ class "output" ]
-            [ text snap.output ]
-        , case snap.state.stack of
-            [] ->
-                text ""
-
-            st ->
-                div
-                    [ class "stack" ]
-                    (st
-                        |> List.reverse
-                        |> List.map
-                            (div
-                                [ class "stack-element" ]
-                                << (Pretty.showLiteral >> text >> List.singleton)
-                            )
-                    )
-        , div
-            [ class "input" ]
-            [ input
-                ((case active of
-                    True ->
-                        [ id "prompt"
-                        , onInput Input
-                        , on "keydown"
-                            (J.field "key" J.string
-                                |> J.map
-                                    (\key ->
-                                        case key of
-                                            "Enter" ->
-                                                Enter
-
-                                            _ ->
-                                                Nop
-                                    )
-                            )
-                        ]
-
-                    False ->
-                        [ disabled True ]
-                 )
-                    ++ [ value snap.input ]
-                )
-                []
-            ]
-        ]
+        Nop ->
+            ( model, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -308,37 +225,33 @@ view model =
         [ div
             [ id "sidebar" ]
             [ div
-                [ onMouseOver <| Logo Hover
-                , onMouseDown <| Logo Press
-                , onMouseUp <| Logo Release
-                , onMouseOut <| Logo Out
-                , id "logo"
+                [ id "title" ]
+                [ div
+                    [ onMouseOver <| Logo Hover
+                    , onMouseDown <| Logo Press
+                    , onMouseUp <| Logo Release
+                    , onMouseOut <| Logo Out
+                    , id "logo"
+                    ]
+                    [ Logo.view model.logo.current
+                    ]
+                , img [ src "/static/logo-text.svg" ] []
                 ]
-                [ Logo.view model.logo.current ]
             , nav
                 [ id "menu" ]
-                [ div
+                [ section
                     [ id "summary" ]
-                    [ Book.viewSummary model.book.summary ]
+                    [ h1 [] [ text "Tutorials" ]
+                    , Book.viewSummary model.book.summary
+                    ]
+                , section
+                    [ id "hoogle" ]
+                    [ h1 [] [ text "Foogle" ] ]
                 ]
             ]
         , div
             [ id "book" ]
             [ Book.viewPage model.book.page
             ]
-        , div
-            [ id "terminal"
-            , onClick Focus
-            ]
-            [ div [ id "terminal-scroll" ]
-                [ div [ id "terminal-content" ]
-                    [ div []
-                        (model.history
-                            |> List.reverse
-                            |> List.map (viewSnapshot False)
-                        )
-                    , viewSnapshot True model.current
-                    ]
-                ]
-            ]
+        , Terminal.view model.terminal |> Html.map Terminal
         ]

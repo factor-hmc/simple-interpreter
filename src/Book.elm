@@ -8,6 +8,12 @@ import Json.Decode as JD exposing (..)
 import Json.Encode
 
 
+type alias File =
+    { path : String
+    , mtime : String
+    }
+
+
 type alias Article =
     { title : String
     , level : String
@@ -22,7 +28,9 @@ type alias Part =
 
 
 type alias Summary =
-    List Part
+    { file : File
+    , parts : List Part
+    }
 
 
 type alias Page =
@@ -41,7 +49,13 @@ type alias Book =
 
 init : Book
 init =
-    { summary = []
+    { summary =
+        { file =
+            { path = ""
+            , mtime = ""
+            }
+        , parts = []
+        }
     , page =
         { title = ""
         , level = ""
@@ -51,19 +65,29 @@ init =
     }
 
 
+file : Decoder File
+file =
+    map2 File
+        (field "path" string)
+        (field "mtime" string)
+
+
 summary : Decoder Summary
 summary =
-    field "parts" <|
-        list <|
-            map2 Part
-                (field "title" string)
-                (field "articles" <|
-                    list <|
-                        map3 Article
-                            (field "title" string)
-                            (field "level" string)
-                            (field "depth" int)
-                )
+    map2 Summary
+        (field "file" file)
+        (field "parts" <|
+            list <|
+                map2 Part
+                    (field "title" string)
+                    (field "articles" <|
+                        list <|
+                            map3 Article
+                                (field "title" string)
+                                (field "level" string)
+                                (field "depth" int)
+                    )
+        )
 
 
 page : Decoder Page
@@ -95,6 +119,7 @@ viewSummary =
                         )
                     ]
             )
+            << .parts
 
 
 viewPage : Page -> Html msg
