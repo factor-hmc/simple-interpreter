@@ -106,14 +106,7 @@ update msg mod =
 focusPrompt : Cmd Msg
 focusPrompt =
     Dom.focus "prompt"
-        |> Task.attempt
-            (\o ->
-                let
-                    _ =
-                        Debug.log "yo" o
-                in
-                Nop
-            )
+        |> Task.attempt (always Nop)
 
 
 
