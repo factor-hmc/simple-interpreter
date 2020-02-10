@@ -87,20 +87,23 @@
 #terminal-content {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   padding: .5rem;
 }
 
 .input {
   display: flex;
-  align-items: baseline;
 
   &::before {
     content: "IN: scratchpad";
     background: #ffb3b3;
     margin-right: .5rem;
+    white-space: nowrap;
   }
 
   input {
+    height: 1.25em;
+    margin: 0;
     border: none;
     padding: 0;
     background: transparent;
@@ -117,6 +120,16 @@
       color: inherit;
     }
   }
+
+}
+
+#prompt-width {
+  position: fixed;
+  visibility: hidden;
+  white-space: nowrap;
+  width: 0;
+  padding-left: 2em;
+  height: 0;
 }
 
 .stack {
@@ -159,7 +172,7 @@
       code {
         border: none;
         background: none;
-        padding: none;
+        padding: 0;
       }
     }
 

@@ -136,14 +136,19 @@ textContent n =
             ""
 
 
-viewNode : Html.Parser.Node -> Html Terminal.Msg
-viewNode n =
+viewNode : (String -> msg) -> Html.Parser.Node -> Html msg
+viewNode copy n =
     let
         attr ( k, v ) =
-            property k <| Json.Encode.string v
+            case k of
+                "class" ->
+                    Attr.class v
+
+                _ ->
+                    property k <| Json.Encode.string v
 
         elem t a c =
-            Html.node t (List.map attr a) <| List.map viewNode c
+            Html.node t (List.map attr a) <| List.map (viewNode copy) c
     in
     case n of
         Html.Parser.Text s ->
@@ -154,11 +159,10 @@ viewNode n =
                 "pre" ->
                     Html.div
                         [ Attr.class "code-block" ]
-                        [ Html.pre [] <| List.map viewNode c
+                        [ Html.pre [] <| List.map (viewNode copy) c
                         , button
                             [ Ev.onClick <|
-                                Terminal.Input <|
-                                    (List.map textContent c |> String.concat)
+                                copy (List.map textContent c |> String.concat)
                             ]
                             [ text "➦" ]
                         ]
@@ -176,12 +180,12 @@ viewNode n =
 --    List.map viewNode
 
 
-viewPage : Page -> Html Terminal.Msg
-viewPage p =
+viewPage : (String -> msg) -> Page -> Html msg
+viewPage copy p =
     div
         [ id "book-content" ]
         (Html.Parser.run p.content
-            |> Result.map (List.map viewNode)
+            |> Result.map (List.map <| viewNode copy)
             |> Result.withDefault []
         )
 

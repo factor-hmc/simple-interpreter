@@ -110,6 +110,7 @@ type Logo
 
 type Msg
     = Frame Float
+    | Copy String
     | Terminal Terminal.Msg
     | Logo Logo
     | Load (Result Http.Error String)
@@ -214,6 +215,13 @@ update msg model =
         Load (Ok s) ->
             ( { model | book = Book.update s model.book }, Cmd.none )
 
+        Copy s ->
+            let
+                ( t, c ) =
+                    Terminal.update (Terminal.Input s) model.terminal
+            in
+            ( { model | terminal = t }, c |> Cmd.map Terminal )
+
         Nop ->
             ( model, Cmd.none )
 
@@ -251,7 +259,7 @@ view model =
             ]
         , div
             [ id "book" ]
-            [ Book.viewPage model.book.page |> Html.map Terminal
+            [ Book.viewPage Copy model.book.page
             ]
         , Terminal.view model.terminal |> Html.map Terminal
         ]

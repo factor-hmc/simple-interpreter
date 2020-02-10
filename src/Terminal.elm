@@ -1,6 +1,7 @@
 module Terminal exposing (..)
 
 import Browser.Dom as Dom
+import Css
 import Eval
 import FactorParser
 import Html.Styled as Html exposing (..)
@@ -16,6 +17,7 @@ type alias Snapshot =
     { input : String
     , state : Eval.State
     , output : String
+    , width : Maybe Float
     }
 
 
@@ -27,6 +29,7 @@ type alias Model =
 
 type Msg
     = Input String
+    | Resize Float
     | Enter
     | Focus
     | Nop
@@ -39,22 +42,32 @@ init =
             { input = ""
             , state = Eval.init
             , output = ""
+            , width = Nothing
             }
       }
     , focusPrompt
     )
 
 
-setInput : String -> Snapshot -> Snapshot
-setInput s snap =
-    { snap | input = s }
+setInput : String -> Model -> Model
+setInput s mod =
+    { mod | current = (\snap -> { snap | input = s }) mod.current }
+
+
+resizeInput : Cmd Msg
+resizeInput =
+    Dom.getViewportOf "prompt-width"
+        |> Task.attempt (Result.map (.scene >> .width >> Resize) >> Result.withDefault Nop)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg mod =
     case msg of
+        Resize w ->
+            ( { mod | current = (\snap -> { snap | width = Just w }) mod.current }, Cmd.none )
+
         Input s ->
-            ( { mod | current = setInput s mod.current }, Cmd.none )
+            ( setInput s mod, Cmd.batch [ resizeInput, focusPrompt ] )
 
         Enter ->
             ( mod.current.input
@@ -69,6 +82,7 @@ update msg mod =
                                 { input = ""
                                 , state = st
                                 , output = ""
+                                , width = Nothing
                                 }
                         }
                     )
@@ -92,20 +106,31 @@ update msg mod =
 focusPrompt : Cmd Msg
 focusPrompt =
     Dom.focus "prompt"
-        |> Task.attempt (always Nop)
+        |> Task.attempt
+            (\o ->
+                let
+                    _ =
+                        Debug.log "yo" o
+                in
+                Nop
+            )
 
 
-eventKey : JD.Decoder Msg
+
+--(always Nop)
+
+
+eventKey : JD.Decoder ( Msg, Bool )
 eventKey =
     JD.field "key" JD.string
         |> JD.map
             (\key ->
                 case key of
                     "Enter" ->
-                        Enter
+                        ( Enter, True )
 
                     _ ->
-                        Nop
+                        ( Nop, False )
             )
 
 
@@ -134,16 +159,23 @@ viewSnapshot active snap =
         , div
             [ class "input" ]
             [ input
-                ((case active of
-                    True ->
-                        [ id "prompt"
-                        , Events.onInput Input
-                        , on "keydown" eventKey
-                        ]
+                ((case snap.width of
+                    Just h ->
+                        [ Attr.css [ Css.important <| Css.width <| Css.px h ] ]
 
-                    False ->
-                        [ disabled True ]
+                    Nothing ->
+                        []
                  )
+                    ++ (case active of
+                            True ->
+                                [ id "prompt"
+                                , Events.onInput Input
+                                , Events.preventDefaultOn "keydown" eventKey
+                                ]
+
+                            False ->
+                                [ disabled True ]
+                       )
                     ++ [ value snap.input ]
                 )
                 []
@@ -167,4 +199,5 @@ view mod =
                 , viewSnapshot True mod.current
                 ]
             ]
+        , span [ id "prompt-width" ] [ text mod.current.input ]
         ]
