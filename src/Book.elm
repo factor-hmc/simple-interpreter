@@ -12,6 +12,7 @@ import Terminal
 type alias File =
     { path : String
     , mtime : String
+    , type_ : String
     }
 
 
@@ -19,7 +20,14 @@ type alias Article =
     { title : String
     , level : String
     , depth : Int
+    , path : String
+    , ref : String
+    , articles : Articles
     }
+
+
+type Articles
+    = Articles (List Article)
 
 
 type alias Part =
@@ -34,43 +42,80 @@ type alias Summary =
     }
 
 
+type alias Readme =
+    { file : File
+    }
+
+
 type alias Page =
     { title : String
     , level : String
     , depth : Int
+    , previous : Maybe Article
+    , next : Maybe Article
     , content : String
     }
 
 
 type alias Book =
     { summary : Summary
+    , readme : Readme
     , page : Page
+    , file : File
+    , version : String
+    }
+
+
+initFile : File
+initFile =
+    { path = ""
+    , mtime = ""
+    , type_ = ""
     }
 
 
 init : Book
 init =
     { summary =
-        { file =
-            { path = ""
-            , mtime = ""
-            }
+        { file = initFile
         , parts = []
         }
+    , readme = { file = initFile }
     , page =
         { title = ""
         , level = ""
         , depth = 0
+        , previous = Nothing
+        , next = Nothing
         , content = ""
         }
+    , file = initFile
+    , version = ""
     }
 
 
 file : Decoder File
 file =
-    map2 File
+    map3 File
         (field "path" string)
         (field "mtime" string)
+        (field "type" string)
+
+
+article : Decoder Article
+article =
+    map6 Article
+        (field "title" string)
+        (field "level" string)
+        (field "depth" int)
+        (field "path" string)
+        (field "ref" string)
+        (field "articles" <|
+            JD.map Articles <|
+                list <|
+                    lazy <|
+                        \() -> article
+        )
 
 
 summary : Decoder Summary
@@ -81,30 +126,29 @@ summary =
             list <|
                 map2 Part
                     (field "title" string)
-                    (field "articles" <|
-                        list <|
-                            map3 Article
-                                (field "title" string)
-                                (field "level" string)
-                                (field "depth" int)
-                    )
+                    (field "articles" <| list article)
         )
 
 
 page : Decoder Page
 page =
-    map4 Page
+    map6 Page
         (field "title" string)
         (field "level" string)
         (field "depth" int)
+        (maybe <| field "previous" article)
+        (maybe <| field "next" article)
         (field "content" string)
 
 
 book : Decoder Book
 book =
-    map2 Book
+    map5 Book
         (field "summary" summary)
+        (field "readme" <| JD.map Readme <| field "file" file)
         (field "page" page)
+        (field "file" file)
+        (field "version" string)
 
 
 viewSummary : Summary -> Html msg
@@ -116,7 +160,15 @@ viewSummary =
                     [ div
                         []
                         (part.articles
-                            |> List.map (\art -> div [] [ text art.title ])
+                            |> List.map
+                                (\art ->
+                                    div
+                                        []
+                                        [ a
+                                            [ Attr.href <| "/book/" ++ art.path ]
+                                            [ text art.title ]
+                                        ]
+                                )
                         )
                     ]
             )

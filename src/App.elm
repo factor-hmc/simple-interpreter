@@ -38,6 +38,7 @@ import Json.Decode as J
 import Json.Encode
 import Lang exposing (..)
 import Logo
+import Nav
 import Parser exposing ((|.))
 import Pretty
 import Svg.Styled exposing (path, svg)
@@ -46,6 +47,8 @@ import Task
 import Terminal
 import Time
 import Url
+import Url.Builder
+import Url.Parser exposing ((</>))
 
 
 type alias Snapshot =
@@ -98,6 +101,7 @@ type alias Model =
     , book : Book.Book
     , time : Float
     , logo : Anim
+    , nav : Browser.Navigation.Key
     }
 
 
@@ -114,6 +118,7 @@ type Msg
     | Terminal Terminal.Msg
     | Logo Logo
     | Load (Result Http.Error String)
+    | Nav Browser.UrlRequest
     | Nop
 
 
@@ -121,7 +126,7 @@ main =
     Browser.application
         { init = init
         , onUrlChange = \_ -> Nop
-        , onUrlRequest = \_ -> Nop
+        , onUrlRequest = Nav
         , subscriptions = subscriptions
         , update = update
         , view = view >> toUnstyled >> List.singleton >> Browser.Document "Factor"
@@ -139,7 +144,7 @@ subscriptions _ =
 
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
-init () _ _ =
+init () _ key =
     let
         ( term, termCmd ) =
             Terminal.init
@@ -154,6 +159,7 @@ init () _ _ =
             , duration = 1
             }
       , book = Book.init
+      , nav = key
       }
     , Cmd.batch
         [ termCmd |> Cmd.map Terminal
@@ -221,6 +227,12 @@ update msg model =
                     Terminal.update (Terminal.Input s) model.terminal
             in
             ( { model | terminal = t }, c |> Cmd.map Terminal )
+
+        Nav (Browser.Internal u) ->
+            ( model, Nav.update Load model.nav u )
+
+        Nav (Browser.External _) ->
+            ( model, Cmd.none )
 
         Nop ->
             ( model, Cmd.none )
