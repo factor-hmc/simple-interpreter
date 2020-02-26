@@ -67,10 +67,6 @@ update : (Result Http.Error String -> loadMsg) -> BNav.Key -> Msg -> Cmd loadMsg
 update load key u =
     case UP.parse parser u of
         Just (Book path) ->
-            let
-                _ =
-                    Debug.log "path" <| bookPathToJson path
-            in
             Cmd.batch
                 [ Http.get
                     { expect = Http.expectString load

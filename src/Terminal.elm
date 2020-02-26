@@ -71,14 +71,7 @@ update msg mod =
             ( mod.current.input
                 |> Parser.run (FactorParser.words |. Parser.end)
                 |> Result.mapError
-                    (\e ->
-                        let
-                            _ =
-                                Debug.log "parserr" e
-                        in
-                        "parseror"
-                    )
-                --(always "parser error")
+                    (always "parser error")
                 |> Result.andThen (Eval.evalWords mod.current.state)
                 |> Result.map
                     (\st ->
