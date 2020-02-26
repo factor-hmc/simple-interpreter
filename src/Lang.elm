@@ -15,6 +15,7 @@ type Literal
 type Builtin
   = Push Literal
   | Add
+  | Print
   | Sub
   | Mul
   | Div

@@ -13,6 +13,7 @@ type alias Lookup =
 type alias State =
     { stack : Stack
     , lookup : Lookup
+    , output : Maybe String
     }
 
 
@@ -32,6 +33,7 @@ initLookup =
     , ( "drop", Drop )
     , ( "while", While )
     , ( "clear", Clear )
+    , ( "print", Print )
     ]
         |> List.map (Tuple.mapSecond (Builtin >> List.singleton))
         |> Dict.fromList
@@ -41,6 +43,7 @@ init : State
 init =
     { stack = []
     , lookup = initLookup
+    , output = Nothing
     }
 
 
@@ -105,18 +108,21 @@ divide stack =
 evalBuiltin : State -> Builtin -> Result String State
 evalBuiltin state builtin =
     let
-        setStackIn st s =
-            { st | stack = s }
+        setStack s =
+            {state | stack = s, output = Nothing}
+
+        setStackAndPrint s p =
+            {state | stack = s, output = Just p}
 
         stack =
             state.stack
 
         op a b =
             numericBinaryOp a b stack
-                |> Result.map (setStackIn state)
+                |> Result.map setStack
 
         okStack =
-            setStackIn state >> Ok
+            setStack >> Ok
     in
     case ( stack, builtin ) of
         ( _, Add ) ->
@@ -129,7 +135,7 @@ evalBuiltin state builtin =
             op (*) (*)
 
         ( _, Div ) ->
-            divide stack |> Result.map (setStackIn state)
+            divide stack |> Result.map setStack
 
         ( x :: y :: rest, Eq ) ->
             (if x == y then
@@ -142,10 +148,10 @@ evalBuiltin state builtin =
 
         ( (Quotation whenFalse) :: (Quotation whenTrue) :: b :: rest, If ) ->
             if toBool b then
-                evalWords (setStackIn state rest) whenTrue
+                evalWords (setStack rest) whenTrue
 
             else
-                evalWords (setStackIn state rest) whenFalse
+                evalWords (setStack rest) whenFalse
 
         ( x :: rest, Dup ) ->
             okStack <| x :: x :: rest
@@ -159,11 +165,19 @@ evalBuiltin state builtin =
         ( x :: rest, Drop ) ->
             okStack <| rest
 
+        ( x :: rest, Print ) ->
+            case x of
+                String s ->
+                    Ok <| setStackAndPrint rest s
+
+                _ ->
+                    Err "tried to print non-string"
+
         ( _, Push lit ) ->
             okStack <| lit :: stack
 
         ( (Quotation body) :: (Quotation pred) :: rest, While ) ->
-            evalWhile { state | stack = rest } body pred
+            evalWhile (setStack rest) body pred
 
         ( _, Clear ) ->
             okStack []

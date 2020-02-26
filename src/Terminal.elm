@@ -16,7 +16,6 @@ import Task
 type alias Snapshot =
     { input : String
     , state : Eval.State
-    , output : String
     , width : Maybe Float
     }
 
@@ -41,7 +40,6 @@ init =
       , current =
             { input = ""
             , state = Eval.init
-            , output = ""
             , width = Nothing
             }
       }
@@ -72,7 +70,15 @@ update msg mod =
         Enter ->
             ( mod.current.input
                 |> Parser.run (FactorParser.words |. Parser.end)
-                |> Result.mapError (always "parser error")
+                |> Result.mapError
+                    (\e ->
+                        let
+                            _ =
+                                Debug.log "parserr" e
+                        in
+                        "parseror"
+                    )
+                --(always "parser error")
                 |> Result.andThen (Eval.evalWords mod.current.state)
                 |> Result.map
                     (\st ->
@@ -81,7 +87,6 @@ update msg mod =
                             , current =
                                 { input = ""
                                 , state = st
-                                , output = ""
                                 , width = Nothing
                                 }
                         }
@@ -131,9 +136,14 @@ viewSnapshot : Bool -> Snapshot -> Html Msg
 viewSnapshot active snap =
     div
         [ class "snapshot" ]
-        [ div
-            [ class "output" ]
-            [ text snap.output ]
+        [ snap.state.output
+            |> Maybe.map
+                (\s ->
+                    div
+                        [ class "output" ]
+                        [ text s ]
+                )
+            |> Maybe.withDefault (text "")
         , case snap.state.stack of
             [] ->
                 text ""

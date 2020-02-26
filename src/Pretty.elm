@@ -3,6 +3,30 @@ module Pretty exposing (..)
 import Lang exposing (..)
 
 
+escape : Char -> String
+escape c =
+    case c of
+        '"' ->
+            "\\\""
+
+        '\\' ->
+            "\\\\"
+
+        '\n' ->
+            "\\n"
+
+        '\t' ->
+            "\\t"
+
+        _ ->
+            String.fromChar c
+
+
+showString : String -> String
+showString s =
+    "\"" ++ (String.toList s |> List.map escape |> String.concat) ++ "\""
+
+
 showLiteral : Literal -> String
 showLiteral lit =
     case lit of
@@ -23,7 +47,7 @@ showLiteral lit =
             "f"
 
         String str ->
-            "\"" ++ str ++ "\""
+            showString str
 
         Array arr ->
             "{ " ++ String.join " " (List.map showLiteral arr) ++ " }"
@@ -70,6 +94,9 @@ showBuiltin b =
 
         While ->
             "while"
+
+        Print ->
+            "print"
 
         Clear ->
             "clear"

@@ -1,6 +1,7 @@
 module FactorParser exposing (..)
 
 import Char
+import Dict
 import Lang exposing (..)
 import Parser exposing (..)
 import Parser.Extras exposing (..)
@@ -28,11 +29,55 @@ num =
             |. spaces
 
 
+string : Parser String
+string =
+    let
+        special =
+            Set.fromList
+                [ '"'
+                , '\\'
+                ]
+
+        escapes =
+            [ ( '"', "\"" )
+            , ( '\\', "\\" )
+            , ( 'n', "\n" )
+            , ( 't', "\t" )
+            ]
+
+        escaped =
+            succeed identity
+                |. symbol "\\"
+                |= oneOf
+                    (escapes
+                        |> List.map
+                            (\( c, s ) -> succeed s |. symbol (String.fromChar c))
+                    )
+    in
+    succeed identity
+        |. symbol "\""
+        |= loop
+            []
+            (\s ->
+                oneOf
+                    [ oneOf
+                        [ chompIf (\c -> not <| Set.member c special)
+                            |> getChompedString
+                        , escaped
+                        ]
+                        |> map (\c -> Loop (c :: s))
+                    , symbol "\""
+                        |> map (\() -> Done (s |> List.reverse |> String.concat))
+                    ]
+            )
+
+
 literal : Parser Literal
 literal =
     lex <|
         oneOf
             [ num
+            , string |> map String
             , succeed Array
                 |= between
                     (symbol "{")
@@ -47,14 +92,16 @@ literal =
             , succeed T |. keyword "t"
             ]
 
+
 effect_ : Parser Effect
 effect_ =
     let
-        var = variable
-              { start = not << isWhitespace
-              , inner = not << isWhitespace
-              , reserved = Set.fromList [ "(", ")", "--" ]
-              }
+        var =
+            variable
+                { start = not << isWhitespace
+                , inner = not << isWhitespace
+                , reserved = Set.fromList [ "(", ")", "--" ]
+                }
     in
     lex <|
         succeed Effect
@@ -67,6 +114,7 @@ effect_ =
             |= many var
             |. spaces
             |. symbol ")"
+
 
 definition : Parser Word
 definition =
