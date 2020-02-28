@@ -2,6 +2,7 @@ module App exposing (..)
 
 --import Styles
 
+import Foogle
 import Book
 import Browser
 import Browser.Dom

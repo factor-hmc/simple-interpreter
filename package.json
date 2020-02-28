@@ -24,6 +24,6 @@
     "node-elm-compiler": "^5.0.4",
     "parcel": "^1.12.4",
     "parcel-plugin-static-files-copy": "^2.3.1",
-    "sass": "^1.25.0"
+    "sass": "^1.26.1"
   }
 }
