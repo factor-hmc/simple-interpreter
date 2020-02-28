@@ -2,7 +2,6 @@ module App exposing (..)
 
 --import Styles
 
-import Foogle
 import Book
 import Browser
 import Browser.Dom
@@ -11,6 +10,7 @@ import Browser.Navigation
 import Dict
 import Eval
 import FactorParser
+import Foogle
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes as A
     exposing
@@ -102,7 +102,9 @@ type alias Model =
     , book : Book.Book
     , time : Float
     , logo : Anim
-    , nav : Browser.Navigation.Key
+    , key : Browser.Navigation.Key
+    , foogle : Foogle.Model
+    , nav : Nav.Model
     }
 
 
@@ -120,6 +122,7 @@ type Msg
     | Logo Logo
     | Load (Result Http.Error String)
     | Nav Browser.UrlRequest
+    | Foogle Foogle.Msg
     | Nop
 
 
@@ -159,8 +162,10 @@ init () _ key =
             , start = 0
             , duration = 1
             }
+      , foogle = Foogle.init
       , book = Book.init
-      , nav = key
+      , key = key
+      , nav = Nav.init
       }
     , Cmd.batch
         [ termCmd |> Cmd.map Terminal
@@ -230,10 +235,21 @@ update msg model =
             ( { model | terminal = t }, c |> Cmd.map Terminal )
 
         Nav (Browser.Internal u) ->
-            ( model, Nav.update Load model.nav u )
+            let
+                ( n, c ) =
+                    Nav.update Load model.key u model.nav
+            in
+            ( { model | nav = n }, c )
 
         Nav (Browser.External _) ->
             ( model, Cmd.none )
+
+        Foogle m ->
+            let
+                ( f, c ) =
+                    Foogle.update m model.foogle
+            in
+            ( { model | foogle = f }, Cmd.map Foogle c )
 
         Nop ->
             ( model, Cmd.none )
@@ -260,19 +276,26 @@ view model =
                 ]
             , nav
                 [ id "menu" ]
-                [ section
-                    [ id "summary" ]
+                [ section []
                     [ h1 [] [ text "Tutorials" ]
                     , Book.viewSummary model.book.summary
                     ]
-                , section
-                    [ id "hoogle" ]
-                    [ h1 [] [ text "Foogle" ] ]
+                , section []
+                    [ h1 [] [ a [ href "/foogle" ] [ text "Foogle" ] ] ]
                 ]
             ]
-        , div
-            [ id "book" ]
-            [ Book.viewPage Copy model.book.page
+        , div [ id "app" ]
+            [ div
+                [ id "book"
+                , A.classList [ ( "app", True ), ( "active", model.nav.app /= Nav.Foogle ) ]
+                ]
+                [ Book.viewPage Copy model.book.page
+                ]
+            , div
+                [ id "foogle"
+                , A.classList [ ( "app", True ), ( "active", model.nav.app == Nav.Foogle ) ]
+                ]
+                (Foogle.view model.foogle |> List.map (Html.map Foogle))
             ]
         , Terminal.view model.terminal |> Html.map Terminal
         ]

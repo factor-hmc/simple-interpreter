@@ -9,6 +9,25 @@
   font-family: 'Open Sans', sans-serif;
 }
 
+#app {
+  position: relative;
+  flex-grow: 1.5;
+  width: 0rem;
+}
+
+.app {
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  &.active {
+    visibility: visible;
+  }
+}
+
 #sidebar {
   padding-top: 2rem;
   background: #353535;
@@ -18,14 +37,14 @@
   flex-direction: column;
 
   nav {
-    #summary h1 {
+    section h1 {
       background: #f8f8f8;
       color: #353535;
 
 
     }
 
-    #summary > div > div > div > div {
+    section > div > div > div > div {
       padding: .5rem 2rem;
       background: #454545;
     }
@@ -41,9 +60,6 @@
 
       transition: .05s linear background;
 
-      &:hover {
-        background: #555;
-      }
     }
 
     a {
@@ -97,6 +113,12 @@
       color: #888;
     }
   }
+
+  ::selection {
+    background: #ccf;
+    color: inherit;
+  }
+
 }
 
 #terminal-scroll {
@@ -135,11 +157,7 @@
     box-shadow: none;
     caret-color: red;
 
-    &::selection {
-      background: #ccf;
-      color: inherit;
-    }
-  }
+ }
 
 }
 
@@ -154,8 +172,6 @@
 
 
 #book {
-  flex-grow: 1.5;
-  width: 0rem;
   display: flex;
 
   #book-content {
@@ -216,4 +232,26 @@
 
   }
 
+}
+
+#foogle {
+  margin: 2rem;
+  display: flex;
+  flex-direction: column;
+
+  h2 {
+    margin: 0;
+  }
+
+  input {
+    margin: 1rem 0;
+  }
+
+  .results {
+    font-family: 'Roboto Mono', monospace;
+    line-height: 1.5em;
+
+    .result {
+    }
+  }
 }

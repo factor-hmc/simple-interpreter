@@ -12,6 +12,16 @@ type alias Msg =
 
 type Dest
     = Book (List String)
+    | Foogle
+
+type alias Model =
+    { app : Dest
+    }
+
+init : Model
+init =
+    { app = Book []
+    }
 
 
 bookParser : UP.Parser (List String -> a) a
@@ -26,7 +36,9 @@ bookParser =
 parser : UP.Parser (Dest -> a) a
 parser =
     UP.oneOf
-        [ UP.s "book" </> UP.map Book bookParser ]
+        [ UP.s "book" </> UP.map Book bookParser
+        , UP.s "foogle" |> UP.map Foogle
+        ]
 
 
 mapHead : (a -> a) -> List a -> List a
@@ -63,11 +75,11 @@ bookPathToJson =
     mapLast <| replaceExt "md" "json"
 
 
-update : (Result Http.Error String -> loadMsg) -> BNav.Key -> Msg -> Cmd loadMsg
-update load key u =
+update : (Result Http.Error String -> loadMsg) -> BNav.Key -> Msg -> Model -> (Model, Cmd loadMsg)
+update load key u model =
     case UP.parse parser u of
         Just (Book path) ->
-            Cmd.batch
+            ({app = Book path}, Cmd.batch
                 [ Http.get
                     { expect = Http.expectString load
                     , url =
@@ -78,6 +90,10 @@ update load key u =
                     }
                 , BNav.pushUrl key <| Url.toString u
                 ]
+                 )
+
+        Just Foogle ->
+            ({app = Foogle}, BNav.pushUrl key <| Url.toString u)
 
         Nothing ->
-            Cmd.none
+            (model, Cmd.none)

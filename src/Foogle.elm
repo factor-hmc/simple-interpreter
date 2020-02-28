@@ -27,14 +27,12 @@ type alias Model =
     }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
-    ( { query = ""
-      , numResults = 5
-      , searchResults = Ok []
-      }
-    , Cmd.none
-    )
+init : Model
+init =
+    { query = ""
+    , numResults = 5
+    , searchResults = Ok []
+    }
 
 
 type Msg
@@ -50,7 +48,12 @@ update msg model =
         Search ->
             ( model
             , Http.get
-                { url = Url.crossOrigin endpoint [] [ Url.string "search" model.query, Url.int "numResults" model.numResults ]
+                { url =
+                    Url.crossOrigin endpoint
+                        []
+                        [ Url.string "search" model.query
+                        , Url.int "numResults" model.numResults
+                        ]
                 , expect = Http.expectJson GotSearchResults searchResultsDecoder
                 }
             )
@@ -76,30 +79,28 @@ searchResultsDecoder =
     JD.list searchResultDecoder
 
 
-view : Model -> Html Msg
+view : Model -> List (Html Msg)
 view model =
-    div
-        []
-        [ h2 [] [ text "Foogle" ]
-        , input
-            [ placeholder "Search Foogle"
-            , value model.query
-            , onInput UpdateQuery
-            , preventDefaultOn "keydown" eventKey
-            ]
-            []
-        , viewSearchResults model.searchResults
+    [ h2 [] [ text "Foogle" ]
+    , input
+        [ placeholder "Search Foogle"
+        , value model.query
+        , onInput UpdateQuery
+        , preventDefaultOn "keydown" eventKey
         ]
+        []
+    , viewSearchResults model.searchResults
+    ]
 
 
 viewSearchResults : Result Http.Error (List SearchResult) -> Html Msg
 viewSearchResults searchResults =
     let
         viewSearchResult res =
-            div [] [ text (": " ++ res.name ++ " " ++ res.effect) ]
+            div [ class "result" ] [ text (": " ++ res.name ++ " " ++ res.effect) ]
     in
     div
-        []
+        [ class "results" ]
         (case searchResults of
             Ok reses ->
                 List.map viewSearchResult reses
@@ -137,10 +138,12 @@ eventKey =
             )
 
 
-main =
-    Browser.element
-        { init = init
-        , update = update
-        , subscriptions = \_ -> Sub.none
-        , view = view >> toUnstyled
-        }
+
+--
+--main =
+--    Browser.element
+--        { init = init
+--        , update = update
+--        , subscriptions = \_ -> Sub.none
+--        , view = view >> toUnstyled
+--        }
