@@ -11,7 +11,7 @@ import Url.Builder as Url
 
 endpoint : String
 endpoint =
-    "http://foogle-server.herokuapp.com"
+    "https://foogle-server.herokuapp.com"
 
 
 type alias SearchResult =
