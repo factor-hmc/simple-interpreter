@@ -136,7 +136,13 @@ viewSnapshot active snap =
                         [ class "output" ]
                         [ text s ]
                 )
-            |> Maybe.withDefault (text "")
+            |> Maybe.withDefault
+                (if List.isEmpty snap.state.stack then
+                    text ""
+
+                 else
+                    div [ class "output" ] [ text "" ]
+                )
         , case snap.state.stack of
             [] ->
                 text ""
