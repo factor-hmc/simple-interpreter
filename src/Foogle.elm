@@ -1,7 +1,7 @@
 module Foogle exposing (..)
 
 import Browser
-import Html.Styled exposing (Attribute, Html, div, h2, input, text, toUnstyled)
+import Html.Styled exposing (Attribute, Html, a, div, h2, input, pre, text, toUnstyled)
 import Html.Styled.Attributes exposing (..)
 import Html.Styled.Events exposing (on, onInput, preventDefaultOn)
 import Http
@@ -17,6 +17,7 @@ endpoint =
 type alias SearchResult =
     { name : String
     , effect : String
+    , url : String
     }
 
 
@@ -54,7 +55,7 @@ update msg model =
                         [ Url.string "search" model.query
                         , Url.int "numResults" model.numResults
                         ]
-                , expect = Http.expectJson GotSearchResults searchResultsDecoder
+                , expect = expectSearchResults GotSearchResults
                 }
             )
 
@@ -72,9 +73,10 @@ searchResultsDecoder : JD.Decoder (List SearchResult)
 searchResultsDecoder =
     let
         searchResultDecoder =
-            JD.map2 (\name effect -> { name = name, effect = effect })
+            JD.map3 (\name effect url -> { name = name, effect = effect, url = url })
                 (JD.field "name" JD.string)
                 (JD.field "effect" JD.string)
+                (JD.field "url" JD.string)
     in
     JD.list searchResultDecoder
 
@@ -97,7 +99,10 @@ viewSearchResults : Result Http.Error (List SearchResult) -> Html Msg
 viewSearchResults searchResults =
     let
         viewSearchResult res =
-            div [ class "result" ] [ text (": " ++ res.name ++ " " ++ res.effect) ]
+            div [ class "result" ] [ a 
+                                       [ class "result-link", href res.url ]
+                                       [ text (": " ++ res.name ++ " " ++ res.effect) ]
+                                   ]
     in
     div
         [ class "results" ]
@@ -108,7 +113,7 @@ viewSearchResults searchResults =
             Err err ->
                 case err of
                     Http.BadBody e ->
-                        [ text <| "Error loading search results: " ++ e ]
+                        [text <| "Error loading search results:", pre [] [text e]]
 
                     Http.BadUrl url ->
                         [ text <| "Error loading search results: bad url " ++ url ]
@@ -123,6 +128,35 @@ viewSearchResults searchResults =
                         [ text "Error loading search results." ]
         )
 
+expectSearchResults : (Result Http.Error (List SearchResult) -> msg) -> Http.Expect msg
+expectSearchResults toMsg =
+  Http.expectStringResponse toMsg <|
+    \response ->
+      case response of
+        Http.BadUrl_ url ->
+          Err (Http.BadUrl url)
+
+        Http.Timeout_ ->
+          Err Http.Timeout
+
+        Http.NetworkError_ ->
+          Err Http.NetworkError
+
+        Http.BadStatus_ metadata body ->
+          Err (Http.BadBody <| 
+                "Error " 
+                ++ String.fromInt metadata.statusCode
+                ++ "\n"
+                ++ body
+              )
+
+        Http.GoodStatus_ metadata body ->
+          case JD.decodeString searchResultsDecoder body of
+            Ok value ->
+              Ok value
+
+            Err err ->
+              Err (Http.BadBody (JD.errorToString err))
 
 eventKey : JD.Decoder ( Msg, Bool )
 eventKey =

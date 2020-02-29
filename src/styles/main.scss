@@ -254,4 +254,17 @@
     .result {
     }
   }
+  
+  .result-link:link {
+    text-decoration: none;
+  }
+  .result-link:visited {
+    text-decoration: none;
+  }
+  .result-link:hover {
+    text-decoration: underline;
+  }
+  .result-link:active {
+    text-decoration: underline;
+  }
 }
