@@ -41,6 +41,7 @@ init =
 type Msg
     = Search
     | UpdateQuery String
+    | UpdateNumResults String
     | GotSearchResults (Result Http.Error (List SearchResult))
     | Nop
 
@@ -66,6 +67,9 @@ update msg model =
 
         UpdateQuery query ->
             ( { model | query = query }, Cmd.none )
+
+        UpdateNumResults numResults ->
+            ( { model | numResults = Maybe.withDefault model.numResults <| String.toInt numResults }, Cmd.none )
 
         Nop ->
             ( model, Cmd.none )
@@ -95,27 +99,38 @@ view model =
         , preventDefaultOn "keydown" eventKey
         ]
         []
+    , div
+        []
+        [ text "Number of results"
+        , input
+            [ value (String.fromInt model.numResults)
+            , onInput UpdateNumResults
+            , type_ "number"
+            ]
+            []
+        ]
     , viewSearchResults model.searchResults
     ]
 
 
 viewSearchResults : Result Http.Error (List SearchResult) -> Html Msg
 viewSearchResults searchResults =
-    let
-        viewSearchResult res =
-            div [ class "result" ] [ a
-                                       [ class "result-vocabulary-link", href res.vocabularyURL ]
-                                       [ text res.vocabulary ]
-                                   , a 
-                                       [ class "result-link", href res.url ]
-                                       [ text (" : " ++ res.name ++ " " ++ res.effect) ]
-                                   ]
-    in
-    div
+    pre
         [ class "results" ]
         (case searchResults of
             Ok reses ->
-                List.map viewSearchResult reses
+                let
+                    maxLength = Maybe.withDefault 0 <| List.maximum <| List.map (\res -> String.length res.vocabulary) reses
+                    viewSearchResult res =
+                        div [ class "result" ] [ a
+                                                   [ class "result-vocabulary-link", href res.vocabularyURL ]
+                                                   [ text res.vocabulary ]
+                                               , text <| String.repeat (1 + maxLength - String.length res.vocabulary) " "
+                                               , a 
+                                                   [ class "result-link", href res.url ]
+                                                   [ text (": " ++ res.name ++ " " ++ res.effect) ]
+                                               ]
+                in List.map viewSearchResult reses
 
             Err err ->
                 case err of
