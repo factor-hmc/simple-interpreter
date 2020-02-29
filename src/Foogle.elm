@@ -18,6 +18,8 @@ type alias SearchResult =
     { name : String
     , effect : String
     , url : String
+    , vocabulary : String
+    , vocabularyURL : String
     }
 
 
@@ -73,10 +75,12 @@ searchResultsDecoder : JD.Decoder (List SearchResult)
 searchResultsDecoder =
     let
         searchResultDecoder =
-            JD.map3 (\name effect url -> { name = name, effect = effect, url = url })
+            JD.map5 (\name effect url vocabulary vocabularyURL -> { name = name, effect = effect, url = url, vocabulary = vocabulary, vocabularyURL = vocabularyURL})
                 (JD.field "name" JD.string)
                 (JD.field "effect" JD.string)
                 (JD.field "url" JD.string)
+                (JD.field "vocabulary" JD.string)
+                (JD.field "vocabulary_url" JD.string)
     in
     JD.list searchResultDecoder
 
@@ -99,9 +103,12 @@ viewSearchResults : Result Http.Error (List SearchResult) -> Html Msg
 viewSearchResults searchResults =
     let
         viewSearchResult res =
-            div [ class "result" ] [ a 
+            div [ class "result" ] [ a
+                                       [ class "result-vocabulary-link", href res.vocabularyURL ]
+                                       [ text res.vocabulary ]
+                                   , a 
                                        [ class "result-link", href res.url ]
-                                       [ text (": " ++ res.name ++ " " ++ res.effect) ]
+                                       [ text (" : " ++ res.name ++ " " ++ res.effect) ]
                                    ]
     in
     div

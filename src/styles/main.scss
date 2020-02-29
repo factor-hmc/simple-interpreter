@@ -267,4 +267,17 @@
   .result-link:active {
     text-decoration: underline;
   }
+
+  .result-vocabulary-link:link {
+    text-decoration: none;
+  }
+  .result-vocabulary-link:visited {
+    text-decoration: none;
+  }
+  .result-vocabulary-link:hover {
+    text-decoration: underline;
+  }
+  .result-vocabulary-link:active {
+    text-decoration: underline;
+  }
 }
