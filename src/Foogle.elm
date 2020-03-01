@@ -106,6 +106,8 @@ view model =
             [ value (String.fromInt model.numResults)
             , onInput UpdateNumResults
             , type_ "number"
+            , Html.Styled.Attributes.min "1"
+            , Html.Styled.Attributes.max "500"
             ]
             []
         ]
