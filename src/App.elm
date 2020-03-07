@@ -65,6 +65,7 @@ type alias Anim =
     , target : Float
     , start : Float
     , duration : Float
+    , active : Bool
     }
 
 
@@ -94,6 +95,7 @@ updateAnim time anim =
                         / anim.duration
                   )
                 * (anim.target - anim.init)
+        , active = time < anim.start + anim.duration
     }
 
 
@@ -120,6 +122,7 @@ type Msg
     | Copy String
     | Terminal Terminal.Msg
     | Logo Logo
+    | Trigger Logo Float
     | Load (Result Http.Error String)
     | Nav Browser.UrlRequest
     | Foogle Foogle.Msg
@@ -138,13 +141,13 @@ main =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions mod =
+    if mod.logo.active then
+        onAnimationFrame <|
+            \t -> Frame <| toFloat (Time.posixToMillis t) / 1000
 
-
-
---onAnimationFrame <|
---    \t -> Frame <| toFloat (Time.posixToMillis t) / 1000
+    else
+        Sub.none
 
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
@@ -161,6 +164,7 @@ init () _ key =
             , target = 0
             , start = 0
             , duration = 1
+            , active = False
             }
       , foogle = Foogle.init
       , book = Book.init
@@ -184,22 +188,7 @@ update msg model =
             { snap | input = str }
     in
     case msg of
-        Frame t ->
-            ( { model
-                | time = t
-                , logo = updateAnim model.time model.logo
-              }
-            , Cmd.none
-            )
-
-        Terminal m ->
-            let
-                ( tm, c ) =
-                    Terminal.update m model.terminal
-            in
-            ( { model | terminal = tm }, c |> Cmd.map Terminal )
-
-        Logo e ->
+        Trigger e t ->
             ( let
                 ( offset, dur, target ) =
                     case e of
@@ -216,9 +205,34 @@ update msg model =
                             ( 0, 0.1, 0 )
               in
               { model
-                | logo = resetAnim (model.time + offset) dur target model.logo
+                | logo = resetAnim (t + offset) dur target model.logo
+                , time = t
               }
             , Cmd.none
+            )
+
+        Frame t ->
+            ( { model
+                | time = t
+                , logo = updateAnim model.time model.logo
+              }
+            , Cmd.none
+            )
+
+        Terminal m ->
+            let
+                ( tm, c ) =
+                    Terminal.update m model.terminal
+            in
+            ( { model | terminal = tm }, c |> Cmd.map Terminal )
+
+        Logo e ->
+            let
+                activate anim =
+                    { anim | active = True }
+            in
+            ( { model | logo = activate model.logo }
+            , Task.perform (\t -> Trigger e (toFloat (Time.posixToMillis t) / 1000)) Time.now
             )
 
         Load (Err _) ->
@@ -272,7 +286,7 @@ view model =
                     ]
                     [ Logo.view model.logo.current
                     ]
-                , img [ src "/static/logo-text.svg" ] []
+                , img [ src "/static/logo-text-online.svg" ] []
                 ]
             , nav
                 [ id "menu" ]

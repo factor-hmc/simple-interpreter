@@ -429,4 +429,7 @@ view t =
             , fill "url(#gradient)"
             ]
             []
+        , text_
+            []
+            [text "online"]
         ]
