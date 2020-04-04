@@ -1,0 +1,8 @@
+<% USING: math ; %>
+<!DOCTYPE html>
+<html>
+    <head><title>Simple Embedded Factor Example</title></head>
+    <body>
+        <% 5 [ %><p>I like repetition</p><% ] times %>
+    </body>
+</html>
