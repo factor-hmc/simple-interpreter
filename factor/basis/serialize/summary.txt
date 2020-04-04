@@ -1,1 +1,0 @@
-Binary serialization of arbitrary object graphs

@@ -1,1 +1,0 @@
-Button gadgets invoke commands when clicked

@@ -1,1 +1,0 @@
-Implementation details for C99 complex float and complex double types

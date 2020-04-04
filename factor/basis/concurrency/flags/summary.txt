@@ -1,1 +1,0 @@
-Flags for cross-thread notification of conditions

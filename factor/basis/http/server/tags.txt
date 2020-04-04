@@ -1,4 +1,0 @@
-web
-enterprise
-network
-servers

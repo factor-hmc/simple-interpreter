@@ -1,1 +1,0 @@
-Base 16 encoding/decoding (RFC 3548)

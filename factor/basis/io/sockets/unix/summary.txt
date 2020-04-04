@@ -1,1 +1,0 @@
-Implementation of TCP/IP and UDP/IP sockets on Unix-like systems

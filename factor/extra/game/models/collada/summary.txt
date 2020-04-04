@@ -1,1 +1,0 @@
-Conversion of COLLADA geometry assets to OpenGL vertex and index buffers

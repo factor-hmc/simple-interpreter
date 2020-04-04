@@ -1,1 +1,0 @@
-Erlang/Termite-style message-passing concurrency

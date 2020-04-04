@@ -1,1 +1,0 @@
-Refuse all authentication requests

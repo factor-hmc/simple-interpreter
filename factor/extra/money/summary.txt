@@ -1,1 +1,0 @@
-Utility for calculating money with rationals

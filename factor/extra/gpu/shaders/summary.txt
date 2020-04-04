@@ -1,1 +1,0 @@
-GPU programs that control vertex transformation and shading

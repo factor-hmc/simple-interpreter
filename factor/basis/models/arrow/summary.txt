@@ -1,1 +1,0 @@
-Arrow models apply a quotation to the value of an underlying model

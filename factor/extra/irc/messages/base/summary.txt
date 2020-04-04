@@ -1,1 +1,0 @@
-IRC messages base implementation

@@ -1,1 +1,0 @@
-Graphical hello world demo

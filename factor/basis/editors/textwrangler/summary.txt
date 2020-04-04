@@ -1,1 +1,0 @@
-Textwrangler editor integration

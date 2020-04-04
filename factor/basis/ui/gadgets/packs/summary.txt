@@ -1,1 +1,0 @@
-Pack gadgets arrange children horizontally or vertically

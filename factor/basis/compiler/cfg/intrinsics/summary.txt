@@ -1,1 +1,0 @@
-Generating instructions from certain primitives

@@ -1,1 +1,0 @@
-Syntax and combinators for manipulating algebraic data types

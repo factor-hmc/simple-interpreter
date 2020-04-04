@@ -1,1 +1,0 @@
-NSApplication-related utilities

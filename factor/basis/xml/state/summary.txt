@@ -1,1 +1,0 @@
-Primitive device for storing the state of the XML parser

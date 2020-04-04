@@ -1,1 +1,0 @@
-FreeType text rendering library binding

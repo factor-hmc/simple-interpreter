@@ -1,2 +1,0 @@
-The Great Computer Language Shootout's knucleotide benchmark to test
-hashtables.

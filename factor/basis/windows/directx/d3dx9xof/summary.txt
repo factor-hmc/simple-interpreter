@@ -1,1 +1,0 @@
-File library bindings for DirectX. Corresponds to d3dx9xof.h.

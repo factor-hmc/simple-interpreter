@@ -1,1 +1,0 @@
-Direct3D 10 bindings. Corresponds to D3D10.h.

@@ -1,1 +1,0 @@
-City, country, region database using database from http://www.geobytes.com/GeoWorldMap.zip

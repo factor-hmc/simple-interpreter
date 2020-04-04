@@ -1,1 +1,0 @@
-Bank account simulator for compound interest calculated daily and paid monthly

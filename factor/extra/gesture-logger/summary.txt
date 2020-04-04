@@ -1,1 +1,0 @@
-Gadget which logs all received gestures, for debugging

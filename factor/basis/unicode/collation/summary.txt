@@ -1,1 +1,0 @@
-Unicode string comparison and sorting (collation)

@@ -1,1 +1,0 @@
-UI text rendering implementation using cross-platform Pango library

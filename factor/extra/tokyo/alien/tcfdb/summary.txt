@@ -1,1 +1,0 @@
-Bindings for Tokyo Cabinet's Fixed Length database API

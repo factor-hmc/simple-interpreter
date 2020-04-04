@@ -1,1 +1,0 @@
-Yahoo! search example using XML

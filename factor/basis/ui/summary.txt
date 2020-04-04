@@ -1,1 +1,0 @@
-Factor's graphical user interface framework

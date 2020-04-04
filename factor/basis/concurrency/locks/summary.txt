@@ -1,1 +1,0 @@
-Traditional locks and many reader/single writer locks

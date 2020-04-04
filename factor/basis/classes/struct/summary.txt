@@ -1,1 +1,0 @@
-Tuple-like access to structured raw memory

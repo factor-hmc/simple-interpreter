@@ -1,1 +1,0 @@
-Manual memory management for interfacing with C

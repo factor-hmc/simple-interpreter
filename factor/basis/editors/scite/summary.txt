@@ -1,1 +1,0 @@
-Scintilla text editor (SciTE) integration

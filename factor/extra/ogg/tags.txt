@@ -1,4 +1,0 @@
-bindings
-audio
-video
-file formats

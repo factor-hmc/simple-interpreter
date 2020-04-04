@@ -1,4 +1,0 @@
-opengl
-bindings
-graphics
-os

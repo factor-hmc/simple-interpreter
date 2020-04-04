@@ -1,1 +1,0 @@
-The default hash implementation provided by the Sodium crypto library

@@ -1,1 +1,0 @@
-Internet (RFC 1071) checksum algorithm

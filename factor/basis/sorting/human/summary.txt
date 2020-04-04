@@ -1,1 +1,0 @@
-Correct sorting of sequences of strings with embedded numbers

@@ -1,1 +1,0 @@
-Tool for generating an atlas image from an array of images

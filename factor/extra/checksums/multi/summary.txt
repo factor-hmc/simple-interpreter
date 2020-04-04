@@ -1,1 +1,0 @@
-Checksum with multiple algorithms in one pass

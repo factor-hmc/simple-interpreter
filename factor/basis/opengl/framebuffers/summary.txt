@@ -1,1 +1,0 @@
-Rendering to offscreen textures using the GL_EXT_framebuffer_object extension

@@ -1,1 +1,0 @@
-Sequence protocol, combinators and utilities

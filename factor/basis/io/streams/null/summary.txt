@@ -1,1 +1,0 @@
-Dummy implementation of stream protocol

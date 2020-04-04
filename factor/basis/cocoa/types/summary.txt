@@ -1,1 +1,0 @@
-NSPoint, NSRect, and other simple Cocoa types

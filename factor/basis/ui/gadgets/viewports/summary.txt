@@ -1,1 +1,0 @@
-Viewport gadgets display a portion of a child gadget and are used to implement scrollers

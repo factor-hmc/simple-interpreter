@@ -1,1 +1,0 @@
-An associative mapping whose entries expire after a while

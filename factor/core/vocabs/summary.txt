@@ -1,1 +1,0 @@
-Vocabularies are collections of words loaded from a source file

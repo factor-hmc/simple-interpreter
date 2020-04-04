@@ -1,1 +1,0 @@
-Factor's optimizing machine code compiler

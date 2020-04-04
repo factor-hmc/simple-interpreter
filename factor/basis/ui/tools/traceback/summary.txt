@@ -1,1 +1,0 @@
-Traceback gadgets display a continuation in human-readable form

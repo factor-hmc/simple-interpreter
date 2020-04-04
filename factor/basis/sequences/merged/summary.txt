@@ -1,1 +1,0 @@
-A virtual sequence which merges (interleaves) other sequences.

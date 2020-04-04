@@ -1,1 +1,0 @@
-Assoc protocol implementation for Redis

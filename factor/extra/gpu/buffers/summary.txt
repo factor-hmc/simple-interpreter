@@ -1,1 +1,0 @@
-Buffers in GPU memory

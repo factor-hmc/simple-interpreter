@@ -1,1 +1,0 @@
-Generate integer handle values to allow Factor object references to be passed through the FFI

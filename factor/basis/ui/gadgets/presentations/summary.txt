@@ -1,1 +1,0 @@
-Presentations display an interactive view of an object

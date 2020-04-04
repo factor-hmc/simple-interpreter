@@ -1,1 +1,0 @@
-Persistent sequence implementation optimizing the case where there is no sharing

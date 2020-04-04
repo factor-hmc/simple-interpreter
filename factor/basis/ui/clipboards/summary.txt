@@ -1,1 +1,0 @@
-Abstract clipboard support

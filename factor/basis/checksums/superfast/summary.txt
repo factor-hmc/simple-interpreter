@@ -1,1 +1,0 @@
-SuperFastHash checksum algorithm

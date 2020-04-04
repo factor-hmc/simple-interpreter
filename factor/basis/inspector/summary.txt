@@ -1,1 +1,0 @@
-Terminal-based object viewer and editor

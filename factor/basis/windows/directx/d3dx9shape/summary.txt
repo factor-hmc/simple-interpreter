@@ -1,1 +1,0 @@
-DirectX 9 bindings. Corresponds to d3dx9shape.h.

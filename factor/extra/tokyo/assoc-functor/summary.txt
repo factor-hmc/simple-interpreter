@@ -1,1 +1,0 @@
-Functor used to implement the assoc protocol on the different db apis in Tokyo
