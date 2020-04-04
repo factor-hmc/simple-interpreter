@@ -1,4 +1,4 @@
-module Lang exposing (..)
+module Factor.Lang exposing (..)
 
 import List
 import String

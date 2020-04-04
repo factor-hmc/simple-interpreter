@@ -1,6 +1,5 @@
 module Logo exposing (..)
 
---import Styles
 import Svg.Styled exposing (..)
 import Svg.Styled.Attributes
     exposing

@@ -1,7 +1,7 @@
-module Eval exposing (..)
+module Factor.Runtime exposing (..)
 
 import Dict exposing (Dict)
-import Lang exposing (..)
+import Factor.Lang exposing (..)
 import List exposing (foldl)
 import Result
 
@@ -109,10 +109,10 @@ evalBuiltin : State -> Builtin -> Result String State
 evalBuiltin state builtin =
     let
         setStack s =
-            {state | stack = s, output = Nothing}
+            { state | stack = s, output = Nothing }
 
         setStackAndPrint s p =
-            {state | stack = s, output = Just p}
+            { state | stack = s, output = Just p }
 
         stack =
             state.stack

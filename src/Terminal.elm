@@ -2,20 +2,20 @@ module Terminal exposing (..)
 
 import Browser.Dom as Dom
 import Css
-import Eval
-import FactorParser
+import Factor.Parser
+import Factor.Runtime
+import Factor.Show
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes as Attr exposing (..)
 import Html.Styled.Events as Events exposing (on)
 import Json.Decode as JD
 import Parser exposing ((|.))
-import Pretty
 import Task
 
 
 type alias Snapshot =
     { input : String
-    , state : Eval.State
+    , state : Factor.Runtime.State
     , width : Maybe Float
     }
 
@@ -39,7 +39,7 @@ init =
     ( { history = []
       , current =
             { input = ""
-            , state = Eval.init
+            , state = Factor.Runtime.init
             , width = Nothing
             }
       }
@@ -69,10 +69,10 @@ update msg mod =
 
         Enter ->
             ( mod.current.input
-                |> Parser.run (FactorParser.words |. Parser.end)
+                |> Parser.run (Factor.Parser.words |. Parser.end)
                 |> Result.mapError
                     (always "parser error")
-                |> Result.andThen (Eval.evalWords mod.current.state)
+                |> Result.andThen (Factor.Runtime.evalWords mod.current.state)
                 |> Result.map
                     (\st ->
                         { mod
@@ -155,7 +155,7 @@ viewSnapshot active snap =
                         |> List.map
                             (div
                                 [ class "stack-element" ]
-                                << (Pretty.showLiteral >> text >> List.singleton)
+                                << (Factor.Show.literal >> text >> List.singleton)
                             )
                     )
         , div

@@ -1,6 +1,6 @@
-module Pretty exposing (..)
+module Factor.Show exposing (..)
 
-import Lang exposing (..)
+import Factor.Lang exposing (..)
 
 
 escape : Char -> String
@@ -22,13 +22,13 @@ escape c =
             String.fromChar c
 
 
-showString : String -> String
-showString s =
+string : String -> String
+string s =
     "\"" ++ (String.toList s |> List.map escape |> String.concat) ++ "\""
 
 
-showLiteral : Literal -> String
-showLiteral lit =
+literal : Literal -> String
+literal lit =
     case lit of
         Int i ->
             String.fromInt i
@@ -46,21 +46,21 @@ showLiteral lit =
         F ->
             "f"
 
-        String str ->
-            showString str
+        String s ->
+            string s
 
         Array arr ->
-            "{ " ++ String.join " " (List.map showLiteral arr) ++ " }"
+            "{ " ++ String.join " " (List.map literal arr) ++ " }"
 
-        Quotation words ->
-            "[ " ++ String.join " " (List.map showWord words) ++ " ]"
+        Quotation ws ->
+            "[ " ++ String.join " " (List.map word ws) ++ " ]"
 
 
-showBuiltin : Builtin -> String
-showBuiltin b =
+builtin : Builtin -> String
+builtin b =
     case b of
         Push lit ->
-            showLiteral lit
+            literal lit
 
         Add ->
             "+"
@@ -102,8 +102,8 @@ showBuiltin b =
             "clear"
 
 
-showEffect : Effect -> String
-showEffect eff =
+effect_ : Effect -> String
+effect_ eff =
     "( "
         ++ String.join " " eff.ins
         ++ " -- "
@@ -111,19 +111,19 @@ showEffect eff =
         ++ " )"
 
 
-showWord : Word -> String
-showWord word =
-    case word of
+word : Word -> String
+word w =
+    case w of
         Word str ->
             str
 
         Builtin b ->
-            showBuiltin b
+            builtin b
 
         Definition name eff body ->
             ": "
                 ++ name
                 ++ " "
-                ++ showEffect eff
+                ++ effect_ eff
                 ++ " "
-                ++ (List.map showWord body |> String.join " ")
+                ++ (List.map word body |> String.join " ")

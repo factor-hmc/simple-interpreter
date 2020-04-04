@@ -1,62 +1,20 @@
 module App exposing (..)
 
---import Styles
-
 import Book
 import Browser
-import Browser.Dom
 import Browser.Events exposing (onAnimationFrame)
 import Browser.Navigation
-import Dict
-import Eval
-import FactorParser
 import Foogle
 import Html.Styled as Html exposing (..)
-import Html.Styled.Attributes as A
-    exposing
-        ( class
-        , css
-        , disabled
-        , href
-        , id
-        , placeholder
-        , property
-        , src
-        , value
-        )
-import Html.Styled.Events
-    exposing
-        ( on
-        , onClick
-        , onInput
-        , onMouseDown
-        , onMouseOut
-        , onMouseOver
-        , onMouseUp
-        )
+import Html.Styled.Attributes as Attr exposing (..)
+import Html.Styled.Events as Events exposing (..)
 import Http
-import Json.Decode as J
-import Json.Encode
-import Lang exposing (..)
 import Logo
 import Nav
-import Parser exposing ((|.))
-import Pretty
-import Svg.Styled exposing (path, svg)
-import Svg.Styled.Attributes exposing (d, fill)
 import Task
 import Terminal
 import Time
 import Url
-import Url.Builder
-import Url.Parser exposing ((</>))
-
-
-type alias Snapshot =
-    { input : String
-    , state : Eval.State
-    , output : String
-    }
 
 
 type alias Anim =
@@ -301,13 +259,13 @@ view model =
         , div [ id "app" ]
             [ div
                 [ id "book"
-                , A.classList [ ( "app", True ), ( "active", model.nav.app /= Nav.Foogle ) ]
+                , Attr.classList [ ( "app", True ), ( "active", model.nav.app /= Nav.Foogle ) ]
                 ]
                 [ Book.viewPage Copy model.book.page
                 ]
             , div
                 [ id "foogle"
-                , A.classList [ ( "app", True ), ( "active", model.nav.app == Nav.Foogle ) ]
+                , Attr.classList [ ( "app", True ), ( "active", model.nav.app == Nav.Foogle ) ]
                 ]
                 (Foogle.view model.foogle |> List.map (Html.map Foogle))
             ]

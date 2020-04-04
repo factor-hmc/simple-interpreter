@@ -1,8 +1,8 @@
-module FactorParser exposing (..)
+module Factor.Parser exposing (..)
 
 import Char
 import Dict
-import Lang exposing (..)
+import Factor.Lang exposing (..)
 import Parser exposing (..)
 import Parser.Extras exposing (..)
 import Set
