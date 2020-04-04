@@ -108,6 +108,8 @@
   }
 
   .stack {
+    margin-top: 1.25em;
+
     &::before {
       content: "--- Data stack:";
       color: #888;
