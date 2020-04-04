@@ -259,13 +259,18 @@ view model =
         , div [ id "app" ]
             [ div
                 [ id "book"
-                , Attr.classList [ ( "app", True ), ( "active", model.nav.app /= Nav.Foogle ) ]
+                , Attr.classList
+                    [ ( "app", True )
+                    , ( "active", model.nav.app /= Nav.Foogle )
+                    ]
                 ]
-                [ Book.viewPage Copy model.book.page
-                ]
+                [ Book.viewPage Copy model.book.page ]
             , div
                 [ id "foogle"
-                , Attr.classList [ ( "app", True ), ( "active", model.nav.app == Nav.Foogle ) ]
+                , Attr.classList
+                    [ ( "app", True )
+                    , ( "active", model.nav.app == Nav.Foogle )
+                    ]
                 ]
                 (Foogle.view model.foogle |> List.map (Html.map Foogle))
             ]

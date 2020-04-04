@@ -1,5 +1,6 @@
 module Logo exposing (..)
 
+import Svg.PathD exposing (Point, Segment(..), pathD)
 import Svg.Styled exposing (..)
 import Svg.Styled.Attributes
     exposing
@@ -20,38 +21,12 @@ import Svg.Styled.Attributes
         )
 
 
-type alias Pt =
-    ( Float, Float )
-
-
-type Move
-    = M Pt
-    | L Pt
-    | A Pt Float Bool Bool Pt
-    | C Pt Pt Pt
-    | Z
-
-
-showPt : Pt -> String
-showPt ( x, y ) =
-    String.fromFloat x ++ " " ++ String.fromFloat y
-
-
-showBool : Bool -> String
-showBool b =
-    if b then
-        "1"
-
-    else
-        "0"
-
-
-rot : Float -> Pt -> Pt
+rot : Float -> Point -> Point
 rot t ( x, y ) =
     ( x * cos t + y * sin t, y * cos t - x * sin t )
 
 
-rotAbout : Pt -> Float -> Pt -> Pt
+rotAbout : Point -> Float -> Point -> Point
 rotAbout ( u, v ) t ( x, y ) =
     let
         ( dx, dy ) =
@@ -60,7 +35,7 @@ rotAbout ( u, v ) t ( x, y ) =
     ( u + dx, v + dy )
 
 
-transform : (Pt -> Pt) -> Move -> Move
+transform : (Point -> Point) -> Segment -> Segment
 transform f move =
     case move of
         M p ->
@@ -78,47 +53,20 @@ transform f move =
         Z ->
             Z
 
-
-showMove : Move -> String
-showMove move =
-    (case move of
-        M p ->
-            [ "M", showPt p ]
-
-        L p ->
-            [ "L", showPt p ]
-
-        A r n sweep large p ->
-            [ "A"
-            , showPt r
-            , String.fromFloat n
-            , showBool sweep
-            , showBool large
-            , showPt p
-            ]
-
-        C p1 p2 p3 ->
-            "C" :: List.map showPt [ p1, p2, p3 ]
-
-        Z ->
-            [ "Z" ]
-    )
-        |> String.join " "
+        -- not used in the logo below, so we won't bother implementing
+        -- the transforms
+        _ ->
+            move
 
 
-showMoves : List Move -> String
-showMoves =
-    List.map showMove >> String.join " "
-
-
-raptor : Float -> List Move
+raptor : Float -> List Segment
 raptor t =
     let
-        adjustPt =
+        adjustPoint =
             rotAbout ( 53.01, 47.42 ) t
 
         adjust =
-            List.map <| transform adjustPt
+            List.map <| transform adjustPoint
     in
     [ M ( 57.51, 0.0 )
     , A ( 57.51, 57.51 ) 0.0 False False ( 0.0, 57.51 )
@@ -169,7 +117,7 @@ raptor t =
             , C ( 52.32, 60.52 ) ( 50.8, 59.84 ) ( 47.02, 58.77 )
             , C ( 42.98, 57.61 ) ( 42.54, 57.38 ) ( 40.54, 55.36 )
             ]
-        ++ [ C (adjustPt ( 36.92, 51.7 )) ( 35.07, 46.49 ) ( 35.41, 40.91 )
+        ++ [ C (adjustPoint ( 36.92, 51.7 )) ( 35.07, 46.49 ) ( 35.41, 40.91 )
            , L ( 35.54, 38.66 )
            , L ( 35.14, 39.85 )
            , C ( 34.88, 40.63 ) ( 34.74, 42.08 ) ( 34.73, 44.08 )
@@ -414,7 +362,7 @@ raptor t =
 view : Float -> Svg msg
 view t =
     svg
-        [ viewBox "0 0 115.02 115.02"]
+        [ viewBox "0 0 115.02 115.02" ]
         [ defs
             []
             [ radialGradient
@@ -424,11 +372,11 @@ view t =
                 ]
             ]
         , path
-            [ d <| showMoves (raptor t)
+            [ d <| pathD (raptor t)
             , fill "url(#gradient)"
             ]
             []
         , text_
             []
-            [text "online"]
+            [ text "online" ]
         ]
