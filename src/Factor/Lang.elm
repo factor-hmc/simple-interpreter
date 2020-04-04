@@ -40,8 +40,3 @@ type Word
 
 type alias Stack = List Literal
 
-toBool : Literal -> Bool
-toBool lit =
-    case lit of
-        F -> False
-        _ -> True

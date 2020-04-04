@@ -17,6 +17,12 @@ type alias State =
     }
 
 
+toBool : Literal -> Bool
+toBool lit =
+    case lit of
+        F -> False
+        _ -> True
+
 initLookup : Lookup
 initLookup =
     [ ( "drop", Drop )
