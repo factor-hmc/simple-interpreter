@@ -103,8 +103,10 @@
   border: 1px solid #aaa;
   margin: 2rem;
 
-  .output {
-    white-space: pre;
+  .outputs {
+    .output {
+      white-space: pre;
+    }
   }
 
   .stack {

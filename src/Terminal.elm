@@ -2,7 +2,6 @@ module Terminal exposing (..)
 
 import Browser.Dom as Dom
 import Css
-import Factor.Parser
 import Factor.Runtime
 import Factor.Show
 import Html.Styled as Html exposing (..)
@@ -68,11 +67,7 @@ update msg mod =
             ( setInput s mod, Cmd.batch [ resizeInput, focusPrompt ] )
 
         Enter ->
-            ( mod.current.input
-                |> Parser.run (Factor.Parser.words |. Parser.end)
-                |> Result.mapError
-                    (always "parser error")
-                |> Result.andThen (Factor.Runtime.evalWords mod.current.state)
+            ( Factor.Runtime.run mod.current.input mod.current.state
                 |> Result.map
                     (\st ->
                         { mod
@@ -129,20 +124,15 @@ viewSnapshot : Bool -> Snapshot -> Html Msg
 viewSnapshot active snap =
     div
         [ class "snapshot" ]
-        [ snap.state.output
-            |> Maybe.map
-                (\s ->
-                    div
-                        [ class "output" ]
-                        [ text s ]
-                )
-            |> Maybe.withDefault
-                (if List.isEmpty snap.state.stack then
-                    text ""
-
-                 else
-                    div [ class "output" ] [ text "" ]
-                )
+        [ div [ class "outputs" ]
+            (snap.state.output
+                |> List.map
+                    (\s ->
+                        div
+                            [ class "output" ]
+                            [ text s ]
+                    )
+            )
         , case snap.state.stack of
             [] ->
                 text ""

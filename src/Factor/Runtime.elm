@@ -2,7 +2,9 @@ module Factor.Runtime exposing (..)
 
 import Dict exposing (Dict)
 import Factor.Lang exposing (..)
+import Factor.Parser
 import List exposing (foldl)
+import Parser
 import Result
 
 
@@ -13,7 +15,7 @@ type alias Lookup =
 type alias State =
     { stack : Stack
     , lookup : Lookup
-    , output : Maybe String
+    , output : List String
     }
 
 
@@ -69,52 +71,72 @@ compileDSL lookup def =
                 |> (Quotation >> Push >> Builtin >> List.singleton)
 
 
+builtins : String
+builtins =
+    [ ( "over", "[ dup ] dip swap" )
+    , ( "pick", "[ over ] dip swap" )
+    , ( "reach", "[ pick ] dip swap" )
+    , ( "-rot", "rot rot" )
+    , ( "keep", "over [ call ] dip" )
+    , ( "nip", "[ drop ] dip" )
+    , ( "bi", "[ keep ] dip call" )
+    , ( "bi*", "[ dip ] dip call" )
+    , ( "bi@", "dup bi*" )
+    , ( "tuck", "dup -rot" )
+    , ( "unless", "swap [ drop ] [ call ] if" )
+    , ( "when", "swap [ call ] [ drop ] if" )
+    , ( "tri", "[ [ keep ] dip keep ] dip call" )
+    ]
+        ++ ([ "nip", "dup", "swap", "over", "pick", "rot" ]
+                |> List.map (\name -> ( name ++ "d", "[ " ++ name ++ " ] dip" ))
+           )
+        ++ [ ( "roll", "rotd swap" )
+           ]
+        |> List.map (\( name, def ) -> ": " ++ name ++ " ( -- ) " ++ def ++ " ;")
+        |> String.join "\n"
+
+
+run : String -> State -> Result String State
+run code state =
+    Parser.run Factor.Parser.words code
+        |> Result.mapError (always "parse error")
+        |> Result.andThen (evalWords { state | output = [] })
+{-
+
 initLookup : Lookup
 initLookup =
-    [ ( "keep", [ Pre "over", Quot [ Pre "call" ], Pre "dip" ] )
-    , ( "-rot", [ Pre "rot", Pre "rot" ] )
-    , ( "over", [ Quot [ Pre "dup" ], Pre "dip", Pre "swap" ] )
-    , ( "pick", [ Quot [ Pre "over" ], Pre "dip", Pre "swap" ] )
-    , ( "reach", [ Quot [ Pre "pick" ], Pre "dip", Pre "swap" ] )
-    , ( "2drop", List.repeat 2 <| Pre "drop" )
+    [ ( "2drop", List.repeat 2 <| Pre "drop" )
     , ( "3drop", List.repeat 3 <| Pre "drop" )
     , ( "4drop", List.repeat 4 <| Pre "drop" )
     , ( "2dup", List.repeat 2 <| Pre "over" )
     , ( "3dup", List.repeat 3 <| Pre "pick" )
-    , ( "nip", [ Quot [ Pre "drop" ], Pre "dip" ] )
-    , ( "nipd", [ Quot [ Pre "nip" ], Pre "dip" ] )
     , ( "2nip", [ Quot [ Pre "2drop" ], Pre "dip" ] )
-    , ( "dupd", [ Quot [ Pre "dup" ], Pre "dip" ] )
-    , ( "swapd", [ Quot [ Pre "swap" ], Pre "dip" ] )
-    , ( "bi", [ Quot [ Pre "keep" ], Pre "dip", Pre "call" ] )
-    , ( "bi*", [ Quot [ Pre "dip" ], Pre "dip", Pre "call" ] )
-    , ( "bi@", [ Pre "dup", Pre "bi*" ] )
-    , ( "overd", [ Quot [ Pre "over" ], Pre "dip" ] )
-    , ( "pickd", [ Quot [ Pre "pick" ], Pre "dip" ] )
-    , ( "rotd", [ Quot [ Pre "rot" ], Pre "dip" ] )
-    , ( "roll", [ Pre "rotd", Pre "swap" ] )
-    , ( "tri", [ Quot [ Quot [ Pre "keep" ], Pre "dip", Pre "keep" ], Pre "dip", Pre "call" ] )
     , ( "tri*", [ Quot [ Quot [ Pre "2dip" ], Pre "dip", Pre "dip" ], Pre "dip", Pre "call" ] )
     , ( "tri@", [ Pre "dup", Pre "dup", Pre "tri*" ] )
-    , ( "tuck", [ Pre "dup", Pre "-rot" ] )
-    , ( "unless", [ Pre "swap", Quot [ Pre "drop" ], Quot [ Pre "call" ], Pre "if" ] )
     , ( "2dip", [ Pre "swap", Quot [ Pre "dip" ], Pre "dip" ] )
-    , ( "do", [ Pre "dup", Pre "2dip" ] )
-    , ( "when", [ Pre "swap", Quot [ Pre "call" ], Quot [ Pre "drop" ], Pre "if" ] )
     ]
         |> List.foldl
             (\( name, defs ) lookup ->
                 Dict.insert name (List.concatMap (compileDSL lookup) defs) lookup
             )
             primitiveLookup
+-}
+
+default : State
+default =
+    { stack = []
+    , lookup = primitiveLookup
+    , output = []
+    }
 
 
 init : State
 init =
-    { stack = []
-    , lookup = initLookup
-    , output = Nothing
-    }
+    --let
+    --    _ =
+    --        Debug.log "run" (default |> run builtins)
+    --in
+    default |> run builtins |> Result.withDefault default
 
 
 numericBinaryOp :
@@ -179,10 +201,10 @@ evalBuiltin : State -> Builtin -> Result String State
 evalBuiltin state builtin =
     let
         setStack s =
-            { state | stack = s, output = Nothing }
+            { state | stack = s, output = [] }
 
         setStackAndPrint s p =
-            { state | stack = s, output = Just p }
+            { state | stack = s, output = p :: state.output }
 
         stack =
             state.stack
