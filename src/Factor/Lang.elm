@@ -27,6 +27,10 @@ type Builtin
   | Drop
   | While
   | Clear
+  | Call
+  | Dip
+  | Compose
+  | Curry
 
 type alias Effect =
     { ins : List String
@@ -39,4 +43,3 @@ type Word
     | Builtin Builtin
 
 type alias Stack = List Literal
-

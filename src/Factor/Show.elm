@@ -98,8 +98,20 @@ builtin b =
         Print ->
             "print"
 
+        Call ->
+            "call"
+
         Clear ->
             "clear"
+
+        Dip ->
+            "dip"
+
+        Compose ->
+            "compose"
+
+        Curry ->
+            "curry"
 
 
 effect_ : Effect -> String

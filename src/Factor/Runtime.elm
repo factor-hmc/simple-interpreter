@@ -20,11 +20,15 @@ type alias State =
 toBool : Literal -> Bool
 toBool lit =
     case lit of
-        F -> False
-        _ -> True
+        F ->
+            False
 
-initLookup : Lookup
-initLookup =
+        _ ->
+            True
+
+
+primitiveLookup : Lookup
+primitiveLookup =
     [ ( "drop", Drop )
     , ( "swap", Swap )
     , ( "+", Add )
@@ -40,9 +44,69 @@ initLookup =
     , ( "while", While )
     , ( "clear", Clear )
     , ( "print", Print )
+    , ( "call", Call )
+    , ( "dip", Dip )
+    , ( "compose", Compose )
+    , ( "curry", Curry )
     ]
         |> List.map (Tuple.mapSecond (Builtin >> List.singleton))
         |> Dict.fromList
+
+
+type BuiltinDef
+    = Quot (List BuiltinDef)
+    | Pre String
+
+
+compileDSL : Lookup -> BuiltinDef -> List Word
+compileDSL lookup def =
+    case def of
+        Pre s ->
+            Dict.get s lookup |> Maybe.withDefault []
+
+        Quot defs ->
+            List.concatMap (compileDSL lookup) defs
+                |> (Quotation >> Push >> Builtin >> List.singleton)
+
+
+initLookup : Lookup
+initLookup =
+    [ ( "keep", [ Pre "over", Quot [ Pre "call" ], Pre "dip" ] )
+    , ( "-rot", [ Pre "rot", Pre "rot" ] )
+    , ( "over", [ Quot [ Pre "dup" ], Pre "dip", Pre "swap" ] )
+    , ( "pick", [ Quot [ Pre "over" ], Pre "dip", Pre "swap" ] )
+    , ( "reach", [ Quot [ Pre "pick" ], Pre "dip", Pre "swap" ] )
+    , ( "2drop", List.repeat 2 <| Pre "drop" )
+    , ( "3drop", List.repeat 3 <| Pre "drop" )
+    , ( "4drop", List.repeat 4 <| Pre "drop" )
+    , ( "2dup", List.repeat 2 <| Pre "over" )
+    , ( "3dup", List.repeat 3 <| Pre "pick" )
+    , ( "nip", [ Quot [ Pre "drop" ], Pre "dip" ] )
+    , ( "nipd", [ Quot [ Pre "nip" ], Pre "dip" ] )
+    , ( "2nip", [ Quot [ Pre "2drop" ], Pre "dip" ] )
+    , ( "dupd", [ Quot [ Pre "dup" ], Pre "dip" ] )
+    , ( "swapd", [ Quot [ Pre "swap" ], Pre "dip" ] )
+    , ( "bi", [ Quot [ Pre "keep" ], Pre "dip", Pre "call" ] )
+    , ( "bi*", [ Quot [ Pre "dip" ], Pre "dip", Pre "call" ] )
+    , ( "bi@", [ Pre "dup", Pre "bi*" ] )
+    , ( "overd", [ Quot [ Pre "over" ], Pre "dip" ] )
+    , ( "pickd", [ Quot [ Pre "pick" ], Pre "dip" ] )
+    , ( "rotd", [ Quot [ Pre "rot" ], Pre "dip" ] )
+    , ( "roll", [ Pre "rotd", Pre "swap" ] )
+    , ( "tri", [ Quot [ Quot [ Pre "keep" ], Pre "dip", Pre "keep" ], Pre "dip", Pre "call" ] )
+    , ( "tri*", [ Quot [ Quot [ Pre "2dip" ], Pre "dip", Pre "dip" ], Pre "dip", Pre "call" ] )
+    , ( "tri@", [ Pre "dup", Pre "dup", Pre "tri*" ] )
+    , ( "tuck", [ Pre "dup", Pre "-rot" ] )
+    , ( "unless", [ Pre "swap", Quot [ Pre "drop" ], Quot [ Pre "call" ], Pre "if" ] )
+    , ( "2dip", [ Pre "swap", Quot [ Pre "dip" ], Pre "dip" ] )
+    , ( "do", [ Pre "dup", Pre "2dip" ] )
+    , ( "when", [ Pre "swap", Quot [ Pre "call" ], Quot [ Pre "drop" ], Pre "if" ] )
+    ]
+        |> List.foldl
+            (\( name, defs ) lookup ->
+                Dict.insert name (List.concatMap (compileDSL lookup) defs) lookup
+            )
+            primitiveLookup
 
 
 init : State
@@ -187,6 +251,19 @@ evalBuiltin state builtin =
 
         ( _, Clear ) ->
             okStack []
+
+        ( (Quotation q) :: rest, Call ) ->
+            evalWords (setStack rest) q
+
+        ( (Quotation q) :: top :: rest, Dip ) ->
+            evalWords (setStack rest) q
+                |> Result.map (\st -> { st | stack = top :: st.stack })
+
+        ( (Quotation q) :: (Quotation r) :: rest, Compose ) ->
+            okStack <| Quotation (r ++ q) :: rest
+
+        ( (Quotation q) :: x :: rest, Curry ) ->
+            okStack <| Quotation (Builtin (Push x) :: q) :: rest
 
         _ ->
             Err "Invalid stack contents."
