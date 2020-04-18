@@ -77,9 +77,9 @@ compileDSL lookup def =
 
 run : String -> State -> Result String State
 run code state =
-    Debug.log "parse result" (Parser.run Factor.Parser.input code)
+    Parser.run Factor.Parser.input code
         |> Result.mapError (always "fail to parse")
-        |> Result.andThen (Debug.log "eval" << eval { state | output = [] })
+        |> Result.andThen (eval { state | output = [] })
 
 
 

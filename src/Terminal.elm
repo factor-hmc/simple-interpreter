@@ -68,7 +68,7 @@ update msg mod =
 
         Enter ->
             ( Factor.Runtime.run mod.current.input mod.current.state
-                  |> (Debug.log "ran")
+                --|> (Debug.log "ran")
                 |> Result.map
                     (\st ->
                         { mod
