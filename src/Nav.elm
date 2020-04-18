@@ -84,7 +84,7 @@ update load key u model =
                     { expect = Http.expectString load
                     , url =
                         Url.Builder.crossOrigin
-                            "https://factor-book.netlify.com"
+                            "https://factor-book.netlify.app"
                             ("json" :: bookPathToJson path)
                             []
                     }
