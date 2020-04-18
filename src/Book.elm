@@ -151,26 +151,27 @@ book =
         (field "version" string)
 
 
+viewArticle : Article -> Html msg
+viewArticle art =
+    let
+        (Articles children) =
+            art.articles
+    in
+    li
+        []
+        [ a [ Attr.href <| "/book/" ++ art.path ]
+            [ text art.title ]
+        , ul [] <| List.map viewArticle children
+        ]
+
+
 viewSummary : Summary -> Html msg
 viewSummary =
     div []
         << List.map
             (\part ->
                 div []
-                    [ div
-                        []
-                        (part.articles
-                            |> List.map
-                                (\art ->
-                                    div
-                                        []
-                                        [ a
-                                            [ Attr.href <| "/book/" ++ art.path ]
-                                            [ text art.title ]
-                                        ]
-                                )
-                        )
-                    ]
+                    [ ul [] <| List.map viewArticle part.articles ]
             )
         << .parts
 

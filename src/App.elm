@@ -132,7 +132,7 @@ init () _ key =
     , Cmd.batch
         [ termCmd |> Cmd.map Terminal
         , Http.get
-            { url = "https://factor-book.netlify.com/json/README.json"
+            { url = "https://factor-book.netlify.app/json/README.json"
             , expect = Http.expectString Load
             }
         ]
@@ -213,7 +213,7 @@ update msg model =
             in
             ( { model | nav = n }, c )
 
-        Nav (Browser.External _) ->
+        Nav (Browser.External u) ->
             ( model, Cmd.none )
 
         Foogle m ->

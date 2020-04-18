@@ -6,7 +6,7 @@
   bottom: 0;
   left: 0;
   display: flex;
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Roboto', sans-serif;
 }
 
 #app {
@@ -37,19 +37,12 @@
   flex-direction: column;
 
   nav {
-    section h1 {
+    overflow-y: auto;
+
+    h1 {
       background: #f8f8f8;
       color: #353535;
 
-
-    }
-
-    section > div > div > div > div {
-      padding: .5rem 2rem;
-      background: #454545;
-    }
-
-    h1 {
       padding: .5rem 1rem;
       margin: 0;
       text-transform: uppercase;
@@ -66,6 +59,17 @@
       color: inherit;
       text-decoration: none;
       outline: none;
+    }
+
+    ul {
+      list-style-type: none;
+      margin: 0;
+      padding-left: 1rem;
+      line-height: 2em;
+
+      li li {
+        font-size: .9375em;
+      }
     }
 
   }
@@ -100,7 +104,7 @@
   border-radius: .25rem;
   overflow: hidden;
   display: flex;
-  border: 1px solid #aaa;
+  border: 1px solid #ddd;
   margin: 2rem;
 
   .outputs {
@@ -177,11 +181,17 @@
 
 #book {
   display: flex;
+  line-height: 2em;
 
   #book-content {
     overflow-y: auto;
-    padding: 2rem;
+    padding: 2em 4rem;
     flex-grow: 1;
+
+    a {
+      text-decoration: none;
+      color: #458588;
+    }
 
     h1, h2 {
       margin: 0;
@@ -189,10 +199,8 @@
 
     code, .code-block {
       font: .875rem 'Roboto Mono', monospace;
-      border: 1px solid #aaa;
-      border-radius: 2px;
+      border-radius: 3px;
       background: #eee;
-
     }
 
     code {
@@ -212,16 +220,17 @@
       position: relative;
 
       button {
-        color: #777;
+        color: #aaa;
         position: absolute;
         top: -.5em;
         right: -.5em;
         padding: .125em .25em;
         background: #fff;
         border-radius: 2px;
-        border: 1px solid #aaa;
+        border: none;
         outline: none;
         cursor: pointer;
+        border-bottom: 1px solid #ddd;
 
         &::-moz-focus-inner {
           border: none;

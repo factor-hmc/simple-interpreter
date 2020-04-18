@@ -1,10 +1,11 @@
 module Nav exposing (..)
 
+import Browser.Navigation as BNav
 import Http
 import Url
 import Url.Builder
 import Url.Parser as UP exposing ((</>))
-import Browser.Navigation as BNav
+
 
 type alias Msg =
     Url.Url
@@ -14,9 +15,11 @@ type Dest
     = Book (List String)
     | Foogle
 
+
 type alias Model =
     { app : Dest
     }
+
 
 init : Model
 init =
@@ -30,6 +33,17 @@ bookParser =
         [ UP.map (\a -> [ a ]) UP.string
         , UP.map (\a b -> [ a, b ]) <| UP.string </> UP.string
         , UP.map (\a b c -> [ a, b, c ]) <| UP.string </> UP.string </> UP.string
+        , UP.map (\a b c d -> [ a, b, c, d ]) <|
+            UP.string
+                </> UP.string
+                </> UP.string
+                </> UP.string
+        , UP.map (\a b c d e -> [ a, b, c, d, e ]) <|
+            UP.string
+                </> UP.string
+                </> UP.string
+                </> UP.string
+                </> UP.string
         ]
 
 
@@ -75,11 +89,12 @@ bookPathToJson =
     mapLast <| replaceExt "md" "json"
 
 
-update : (Result Http.Error String -> loadMsg) -> BNav.Key -> Msg -> Model -> (Model, Cmd loadMsg)
+update : (Result Http.Error String -> loadMsg) -> BNav.Key -> Msg -> Model -> ( Model, Cmd loadMsg )
 update load key u model =
     case UP.parse parser u of
         Just (Book path) ->
-            ({app = Book path}, Cmd.batch
+            ( { app = Book path }
+            , Cmd.batch
                 [ Http.get
                     { expect = Http.expectString load
                     , url =
@@ -90,10 +105,10 @@ update load key u model =
                     }
                 , BNav.pushUrl key <| Url.toString u
                 ]
-                 )
+            )
 
         Just Foogle ->
-            ({app = Foogle}, BNav.pushUrl key <| Url.toString u)
+            ( { app = Foogle }, BNav.pushUrl key <| Url.toString u )
 
         Nothing ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
