@@ -50,10 +50,10 @@ literal lit =
             string s
 
         Array arr ->
-            "{ " ++ String.join " " (List.map literal arr) ++ " }"
+            "{ " ++ String.join " " (List.map action arr) ++ " }"
 
-        Quotation ws ->
-            "[ " ++ String.join " " (List.map word ws) ++ " ]"
+        Quotation acts ->
+            "[ " ++ String.join " " (List.map action acts) ++ " ]"
 
 
 builtin : Builtin -> String
@@ -113,6 +113,9 @@ builtin b =
         Curry ->
             "curry"
 
+        Nth ->
+            "nth"
+
 
 effect_ : Effect -> String
 effect_ eff =
@@ -123,10 +126,10 @@ effect_ eff =
         ++ " )"
 
 
-word : Word -> String
-word w =
+action : Action -> String
+action w =
     case w of
-        Word str ->
+        Apply str ->
             str
 
         Builtin b ->
@@ -138,4 +141,4 @@ word w =
                 ++ " "
                 ++ effect_ eff
                 ++ " "
-                ++ (List.map word body |> String.join " ")
+                ++ (List.map action body |> String.join " ")

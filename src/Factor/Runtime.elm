@@ -3,13 +3,14 @@ module Factor.Runtime exposing (..)
 import Dict exposing (Dict)
 import Factor.Lang exposing (..)
 import Factor.Parser
+import Factor.Vocabs as Vocabs
 import List exposing (foldl)
-import Parser
+import Parser exposing ((|.))
 import Result
 
 
 type alias Lookup =
-    Dict String (List Word)
+    Dict String (List Action)
 
 
 type alias State =
@@ -50,6 +51,8 @@ primitiveLookup =
     , ( "dip", Dip )
     , ( "compose", Compose )
     , ( "curry", Curry )
+    , ( "t", Push T )
+    , ( "f", Push F )
     ]
         |> List.map (Tuple.mapSecond (Builtin >> List.singleton))
         |> Dict.fromList
@@ -60,7 +63,7 @@ type BuiltinDef
     | Pre String
 
 
-compileDSL : Lookup -> BuiltinDef -> List Word
+compileDSL : Lookup -> BuiltinDef -> List Action
 compileDSL lookup def =
     case def of
         Pre s ->
@@ -71,56 +74,14 @@ compileDSL lookup def =
                 |> (Quotation >> Push >> Builtin >> List.singleton)
 
 
-builtins : String
-builtins =
-    [ ( "over", "[ dup ] dip swap" )
-    , ( "pick", "[ over ] dip swap" )
-    , ( "reach", "[ pick ] dip swap" )
-    , ( "-rot", "rot rot" )
-    , ( "keep", "over [ call ] dip" )
-    , ( "nip", "[ drop ] dip" )
-    , ( "bi", "[ keep ] dip call" )
-    , ( "bi*", "[ dip ] dip call" )
-    , ( "bi@", "dup bi*" )
-    , ( "tuck", "dup -rot" )
-    , ( "unless", "swap [ drop ] [ call ] if" )
-    , ( "when", "swap [ call ] [ drop ] if" )
-    , ( "tri", "[ [ keep ] dip keep ] dip call" )
-    ]
-        ++ ([ "nip", "dup", "swap", "over", "pick", "rot" ]
-                |> List.map (\name -> ( name ++ "d", "[ " ++ name ++ " ] dip" ))
-           )
-        ++ [ ( "roll", "rotd swap" )
-           ]
-        |> List.map (\( name, def ) -> ": " ++ name ++ " ( -- ) " ++ def ++ " ;")
-        |> String.join "\n"
-
 
 run : String -> State -> Result String State
 run code state =
-    Parser.run Factor.Parser.words code
-        |> Result.mapError (always "parse error")
-        |> Result.andThen (evalWords { state | output = [] })
-{-
+    Debug.log "parse result" (Parser.run Factor.Parser.input code)
+        |> Result.mapError (always "fail to parse")
+        |> Result.andThen (Debug.log "eval" << eval { state | output = [] })
 
-initLookup : Lookup
-initLookup =
-    [ ( "2drop", List.repeat 2 <| Pre "drop" )
-    , ( "3drop", List.repeat 3 <| Pre "drop" )
-    , ( "4drop", List.repeat 4 <| Pre "drop" )
-    , ( "2dup", List.repeat 2 <| Pre "over" )
-    , ( "3dup", List.repeat 3 <| Pre "pick" )
-    , ( "2nip", [ Quot [ Pre "2drop" ], Pre "dip" ] )
-    , ( "tri*", [ Quot [ Quot [ Pre "2dip" ], Pre "dip", Pre "dip" ], Pre "dip", Pre "call" ] )
-    , ( "tri@", [ Pre "dup", Pre "dup", Pre "tri*" ] )
-    , ( "2dip", [ Pre "swap", Quot [ Pre "dip" ], Pre "dip" ] )
-    ]
-        |> List.foldl
-            (\( name, defs ) lookup ->
-                Dict.insert name (List.concatMap (compileDSL lookup) defs) lookup
-            )
-            primitiveLookup
--}
+
 
 default : State
 default =
@@ -132,11 +93,9 @@ default =
 
 init : State
 init =
-    --let
-    --    _ =
-    --        Debug.log "run" (default |> run builtins)
-    --in
-    default |> run builtins |> Result.withDefault default
+    default
+        |> run (Dict.get "kernel" Vocabs.vocabs |> Maybe.withDefault "")
+        |> Result.withDefault default
 
 
 numericBinaryOp :
@@ -240,10 +199,10 @@ evalBuiltin state builtin =
 
         ( (Quotation whenFalse) :: (Quotation whenTrue) :: b :: rest, If ) ->
             if toBool b then
-                evalWords (setStack rest) whenTrue
+                eval (setStack rest) whenTrue
 
             else
-                evalWords (setStack rest) whenFalse
+                eval (setStack rest) whenFalse
 
         ( x :: rest, Dup ) ->
             okStack <| x :: x :: rest
@@ -275,10 +234,10 @@ evalBuiltin state builtin =
             okStack []
 
         ( (Quotation q) :: rest, Call ) ->
-            evalWords (setStack rest) q
+            eval (setStack rest) q
 
         ( (Quotation q) :: top :: rest, Dip ) ->
-            evalWords (setStack rest) q
+            eval (setStack rest) q
                 |> Result.map (\st -> { st | stack = top :: st.stack })
 
         ( (Quotation q) :: (Quotation r) :: rest, Compose ) ->
@@ -287,39 +246,42 @@ evalBuiltin state builtin =
         ( (Quotation q) :: x :: rest, Curry ) ->
             okStack <| Quotation (Builtin (Push x) :: q) :: rest
 
+        ( (Array a) :: Int i :: rest, nth ) ->
+            okStack rest
+
         _ ->
             Err "Invalid stack contents."
 
 
-eval : State -> Word -> Result String State
-eval state w =
+evalOne : State -> Action -> Result String State
+evalOne state w =
     case w of
         Builtin b ->
             evalBuiltin state b
 
-        Word word ->
+        Apply word ->
             Dict.get word state.lookup
-                |> Maybe.map (evalWords state)
+                |> Maybe.map (eval state)
                 |> Maybe.withDefault (Err <| "Unimplemented word " ++ word)
 
         Definition name _ body ->
             Ok { state | lookup = Dict.insert name body state.lookup }
 
 
-evalWords : State -> List Word -> Result String State
-evalWords state =
-    foldl (\w -> Result.andThen (\st -> eval st w)) (Ok state)
+eval : State -> List Action -> Result String State
+eval state =
+    foldl (\w -> Result.andThen (\st -> evalOne st w)) (Ok state)
 
 
-evalWhile : State -> List Word -> List Word -> Result String State
+evalWhile : State -> List Action -> List Action -> Result String State
 evalWhile state body pred =
-    evalWords state pred
+    eval state pred
         |> Result.andThen
             (\st ->
                 case st.stack of
                     b :: rest ->
                         if toBool b then
-                            evalWords { st | stack = rest } body
+                            eval { st | stack = rest } body
                                 |> Result.andThen
                                     (\newStack -> evalWhile newStack body pred)
 

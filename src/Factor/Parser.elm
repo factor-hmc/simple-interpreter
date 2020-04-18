@@ -3,30 +3,40 @@ module Factor.Parser exposing (..)
 import Char
 import Dict
 import Factor.Lang exposing (..)
+import Factor.Show as Show
 import Parser exposing (..)
 import Parser.Extras exposing (..)
 import Set
-import Util exposing (..)
+import Util
 
 
-lex : Parser a -> Parser a
-lex p =
-    succeed identity
-        |. spaces
-        |= p
+spaces : Parser ()
+spaces =
+    chompWhile Util.isWhitespace
+        |. oneOf
+            [ symbol "!"
+                |. chompIf (\c -> Util.isWhitespace c && c /= '\n')
+                |. chompUntilEndOr "\n"
+                |. chompWhile Util.isWhitespace
+                |> many
+                |> map (always ())
+            , succeed ()
+            ]
 
 
-num : Parser Literal
-num =
-    lex <|
-        number
-            { int = Just Int
-            , hex = Just Int
-            , octal = Just Int
-            , binary = Just Int
-            , float = Just Float
-            }
-            |. spaces
+someSpaces : Parser ()
+someSpaces =
+    chompIf Util.isWhitespace |. spaces
+
+
+spacesBefore : List a -> Parser ()
+spacesBefore l =
+    case l of
+        [] ->
+            succeed ()
+
+        _ ->
+            someSpaces
 
 
 string : Parser String
@@ -72,83 +82,163 @@ string =
             )
 
 
-literal : Parser Literal
-literal =
-    lex <|
-        oneOf
-            [ num
-            , string |> map String
-            , succeed Array
-                |= between
-                    (symbol "{")
-                    (symbol "}")
-                    (lazy <| \() -> many literal)
-            , succeed Quotation
-                |= between
-                    (symbol "[")
-                    (symbol "]")
-                    (lazy <| \() -> words)
-            , succeed F |. keyword "f"
-            , succeed T |. keyword "t"
-            ]
+token : Parser Token
+token =
+    oneOf
+        [ map (Literal << String) string
+        , variable
+            { start = not << Util.isWhitespace
+            , inner = not << Util.isWhitespace
+            , reserved = Set.empty
+            }
+            |> getChompedString
+            |> map
+                (\s ->
+                    run
+                        (number
+                            { int = Just Int
+                            , hex = Just Int
+                            , octal = Just Int
+                            , binary = Just Int
+                            , float = Just Float
+                            }
+                            |. end
+                        )
+                        s
+                        |> Result.map Literal
+                        |> Result.withDefault (Word s)
+                )
+        ]
+
+
+quotation : Parser Action
+quotation =
+    succeed (Builtin << Push << Quotation)
+        |. someSpaces
+        |= actions (Just <| Word "]")
+
+
+array : Parser Action
+array =
+    succeed (Builtin << Push << Array)
+        |. someSpaces
+        |= actions (Just <| Word "}")
+
+
+definition : Parser Action
+definition =
+    succeed Definition
+        |. someSpaces
+        |= (token
+                |> andThen
+                    (\t ->
+                        case t of
+                            Word s ->
+                                succeed s
+
+                            Literal l ->
+                                problem <| "invalid word name " ++ Show.literal l
+                    )
+           )
+        |. someSpaces
+        |= effect_
+        |. someSpaces
+        |= actions (Just <| Word ";")
+        |. oneOf [ backtrackable (someSpaces |. keyword "inline"), succeed () ]
 
 
 effect_ : Parser Effect
 effect_ =
     let
-        var =
-            variable
-                { start = not << isWhitespace
-                , inner = not << isWhitespace
-                , reserved = Set.fromList [ "(", ")", "--" ]
-                }
+        idents res end =
+            loop [] <|
+                \is ->
+                    succeed identity
+                        |. spacesBefore is
+                        |= variable
+                            { start = not << Util.isWhitespace
+                            , inner = not << Util.isWhitespace
+                            , reserved = Set.fromList [ res ]
+                            }
+                        |> andThen
+                            (\i ->
+                                if i == res then
+                                    problem <| "reserved " ++ res
+
+                                else if i == end then
+                                    succeed <| Done <| List.reverse is
+
+                                else
+                                    succeed <| Loop <| i :: is
+                            )
     in
-    lex <|
-        succeed Effect
-            |. symbol "("
-            |. spaces
-            |= many var
-            |. spaces
-            |. symbol "--"
-            |. spaces
-            |= many var
-            |. spaces
-            |. symbol ")"
+    succeed Effect
+        |. symbol "("
+        |. someSpaces
+        |= idents ")" "--"
+        |. someSpaces
+        |= idents "--" ")"
 
 
-definition : Parser Word
-definition =
-    lex <|
-        succeed Definition
-            |. symbol ":"
-            |. spaces
-            |= word
-            |. spaces
-            |= effect_
-            |. spaces
-            |= words
-            |. spaces
-            |. symbol ";"
+action : Token -> Parser Action
+action t =
+    case t of
+        Word "[" ->
+            quotation
+
+        Word "{" ->
+            array
+
+        Word ":" ->
+            definition
+
+        Word w ->
+            succeed <| Apply w
+
+        Literal l ->
+            succeed <| Builtin <| Push l
 
 
-word : Parser String
-word =
-    lex <|
-        variable
-            { start = not << isWhitespace
-            , inner = not << isWhitespace
-            , reserved = Set.fromList [ "]", "[", "}", "{", ":", ";" ]
-            }
-            |. spaces
+actions : Maybe Token -> Parser (List Action)
+actions end =
+    loop [] <|
+        let
+            nextToken acts f =
+                succeed identity
+                    |. spacesBefore acts
+                    |= token
+                    |> andThen f
+
+            done =
+                succeed << Done << List.reverse
+
+            addAction acts t =
+                action t |> map (\a -> Loop <| a :: acts)
+        in
+        case end of
+            Nothing ->
+                \acts ->
+                    oneOf
+                        [ backtrackable <| nextToken acts <| addAction acts
+                        , done acts
+                        ]
+
+            Just e ->
+                \acts ->
+                    nextToken acts
+                        (\t ->
+                            if t == e then
+                                done acts
+
+                            else
+                                addAction acts t
+                        )
 
 
-words : Parser (List Word)
-words =
-    many
-        (oneOf
-            [ map (Builtin << Push) literal
-            , map Word word
-            , lazy <| \() -> definition
-            ]
-        )
+input : Parser (List Action)
+input =
+    succeed identity
         |. spaces
+        |= actions Nothing
+        |. spaces
+        |. end
