@@ -26,6 +26,10 @@ vocabs =
             |> String.join "\n"
         )
             ++ """
+
+! Stack stuff
+: 2over ( x y z -- x y z x y ) pick pick ; inline
+
 : ? ( ? true false -- true/false )
     rot [ drop ] [ nip ] if ; inline
 ! Single branch
@@ -236,6 +240,58 @@ vocabs =
 : until ( -- ) ! ( ..a pred: ( ..a -- ..b ? ) body: ( ..b -- ..a ) -- ..b )
     [ [ not ] compose ] dip while ; inline
 
+"""
+      )
+    , ( "math"
+      , """
+: (each-integer) ( -- ) ! ( ... i n quot: ( ... i -- ... ) -- ... )
+    2over < [
+        [ nip call ] 3keep
+        [ 1 + ] 2dip (each-integer)
+    ] [
+        3drop
+    ] if ; inline ! recursive
+
+: (find-integer) ( -- ) ! ( ... i n quot: ( ... i -- ... ? ) -- ... i/f )
+    2over < [
+        [ nip call ] 3keep roll
+        [ 2drop ]
+        [ [ 1 + ] 2dip (find-integer) ] if
+    ] [
+        3drop f
+    ] if ; inline ! recursive
+
+: (all-integers?) ( -- ) ! ( ... i n quot: ( ... i -- ... ? ) -- ... ? )
+    2over < [
+        [ nip call ] 3keep roll
+        [ [ 1 + ] 2dip (all-integers?) ]
+        [ 3drop f ] if
+    ] [
+        3drop t
+    ] if ; inline ! recursive
+
+: each-integer ( -- ) ! ( ... n quot: ( ... i -- ... ) -- ... )
+    [ 0 ] 2dip (each-integer) ; inline
+
+: times ( -- ) ! ( ... n quot: ( ... -- ... ) -- ... )
+    [ drop ] prepose each-integer ; inline
+
+: find-integer ( -- ) ! ( ... n quot: ( ... i -- ... ? ) -- ... i/f )
+    [ 0 ] 2dip (find-integer) ; inline
+
+: all-integers? ( -- ) ! ( ... n quot: ( ... i -- ... ? ) -- ... ? )
+    [ 0 ] 2dip (all-integers?) ; inline
+
+: find-last-integer ( -- ) ! ( ... n quot: ( ... i -- ... ? ) -- ... i/f )
+    over 0 < [
+        2drop f
+    ] [
+        [ call ] 2keep rot [
+            drop
+        ] [
+            [ 1 - ] dip find-last-integer
+        ] if
+    ] if ; inline ! recursive
 """
       )
     ]

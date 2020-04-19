@@ -30,6 +30,15 @@ toBool lit =
             True
 
 
+toFactorBool : Bool -> Literal
+toFactorBool b =
+    if b then
+        T
+
+    else
+        F
+
+
 primitiveLookup : Lookup
 primitiveLookup =
     [ ( "drop", Drop )
@@ -39,6 +48,10 @@ primitiveLookup =
     , ( "*", Mul )
     , ( "/", Div )
     , ( "=", Eq )
+    , ( "<", Lt )
+    , ( "<=", Le )
+    , ( ">", Gt )
+    , ( ">=", Ge )
     , ( "if", If )
     , ( "dup", Dup )
     , ( "swap", Swap )
@@ -74,13 +87,11 @@ compileDSL lookup def =
                 |> (Quotation >> Push >> Builtin >> List.singleton)
 
 
-
 run : String -> State -> Result String State
 run code state =
     Parser.run Factor.Parser.input code
         |> Result.mapError (always "fail to parse")
         |> Result.andThen (eval { state | output = [] })
-
 
 
 default : State
@@ -95,72 +106,38 @@ init : State
 init =
     default
         |> run (Dict.get "kernel" Vocabs.vocabs |> Maybe.withDefault "")
+        |> Result.andThen (run (Dict.get "math" Vocabs.vocabs |> Maybe.withDefault ""))
         |> Result.withDefault default
 
 
-numericBinaryOp :
-    (Float -> Float -> Float)
-    -> (Int -> Int -> Int)
+numericOp :
+    (Float -> Float -> Literal)
+    -> (Int -> Int -> Literal)
     -> Stack
     -> Result String Stack
-numericBinaryOp floatOp intOp stack =
-    case stack of
-        (Int x) :: (Int y) :: rest ->
-            Ok <| Int (intOp y x) :: rest
+numericOp f i s =
+    case s of
+        (Int y) :: (Int x) :: rest ->
+            Ok <| i x y :: rest
 
-        (Float x) :: (Float y) :: rest ->
-            Ok <| Float (floatOp y x) :: rest
+        (Int y) :: (Float x) :: rest ->
+            Ok <| f x (toFloat y) :: rest
 
-        (Int x) :: (Float y) :: rest ->
-            Ok <| Float (floatOp y (toFloat x)) :: rest
+        (Float y) :: (Int x) :: rest ->
+            Ok <| f (toFloat x) y :: rest
 
-        (Float x) :: (Int y) :: rest ->
-            Ok <| Float (floatOp (toFloat y) x) :: rest
-
-        [ x ] ->
-            Err "Two numeric arguments expected, got only one element on stack."
-
-        [] ->
-            Err "Two numeric arguments expected, got empty stack."
+        (Float y) :: (Float x) :: rest ->
+            Ok <| f x y :: rest
 
         _ ->
-            Err "Two numeric arguments expected, got non-numeric type."
-
-
-
--- yes indeed we have to special-case division because it can produce floats.
-
-
-divide : Stack -> Result String Stack
-divide stack =
-    case stack of
-        (Int x) :: (Int y) :: rest ->
-            Ok <| Float (toFloat y / toFloat x) :: rest
-
-        (Float x) :: (Float y) :: rest ->
-            Ok <| Float (y / x) :: rest
-
-        (Int x) :: (Float y) :: rest ->
-            Ok <| Float (y / toFloat x) :: rest
-
-        (Float x) :: (Int y) :: rest ->
-            Ok <| Float (toFloat y / x) :: rest
-
-        [ x ] ->
-            Err "Two numeric arguments expected, got only one element on stack."
-
-        [] ->
-            Err "Two numeric arguments expected, got empty stack."
-
-        _ ->
-            Err "Two numeric arguments expected, got non-numeric type."
+            Err "invalid numbers"
 
 
 evalBuiltin : State -> Builtin -> Result String State
 evalBuiltin state builtin =
     let
         setStack s =
-            { state | stack = s, output = [] }
+            { state | stack = s }
 
         setStackAndPrint s p =
             { state | stack = s, output = p :: state.output }
@@ -168,8 +145,19 @@ evalBuiltin state builtin =
         stack =
             state.stack
 
-        op a b =
-            numericBinaryOp a b stack
+        bcompose =
+            (<<) << (<<)
+
+        arith f i =
+            numericOp (bcompose Float f) (bcompose Int i) stack
+                |> Result.map setStack
+
+        comp f i =
+            let
+                wrap =
+                    bcompose toFactorBool
+            in
+            numericOp (wrap f) (wrap i) stack
                 |> Result.map setStack
 
         okStack =
@@ -177,25 +165,35 @@ evalBuiltin state builtin =
     in
     case ( stack, builtin ) of
         ( _, Add ) ->
-            op (+) (+)
+            arith (+) (+)
 
         ( _, Sub ) ->
-            op (-) (-)
+            arith (-) (-)
 
         ( _, Mul ) ->
-            op (*) (*)
+            arith (*) (*)
 
         ( _, Div ) ->
-            divide stack |> Result.map setStack
+            numericOp
+                (bcompose Float (/))
+                (\a b -> Float <| toFloat a / toFloat b)
+                stack
+                |> Result.map setStack
 
         ( x :: y :: rest, Eq ) ->
-            (if x == y then
-                T :: rest
+            okStack <| toFactorBool (x == y) :: rest
 
-             else
-                F :: rest
-            )
-                |> okStack
+        ( _, Lt ) ->
+            comp (<) (<)
+
+        ( _, Le ) ->
+            comp (<=) (<=)
+
+        ( _, Gt ) ->
+            comp (>) (>)
+
+        ( _, Ge ) ->
+            comp (>=) (>=)
 
         ( (Quotation whenFalse) :: (Quotation whenTrue) :: b :: rest, If ) ->
             if toBool b then
@@ -246,7 +244,7 @@ evalBuiltin state builtin =
         ( (Quotation q) :: x :: rest, Curry ) ->
             okStack <| Quotation (Builtin (Push x) :: q) :: rest
 
-        ( (Array a) :: Int i :: rest, nth ) ->
+        ( (Array a) :: (Int i) :: rest, nth ) ->
             okStack rest
 
         _ ->

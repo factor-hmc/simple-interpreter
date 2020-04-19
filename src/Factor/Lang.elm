@@ -27,6 +27,10 @@ type Builtin
     | Mul
     | Div
     | Eq
+    | Lt
+    | Le
+    | Gt
+    | Ge
     | If
     | Dup
     | Swap
