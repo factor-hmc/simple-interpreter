@@ -89,7 +89,12 @@ bookPathToJson =
     mapLast <| replaceExt "md" "json"
 
 
-update : (Result Http.Error String -> loadMsg) -> BNav.Key -> Msg -> Model -> ( Model, Cmd loadMsg )
+update :
+    (Result Http.Error String -> loadMsg)
+    -> BNav.Key
+    -> Msg
+    -> Model
+    -> ( Model, Cmd loadMsg )
 update load key u model =
     case UP.parse parser u of
         Just (Book path) ->

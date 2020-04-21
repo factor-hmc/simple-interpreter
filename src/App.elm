@@ -249,7 +249,7 @@ view model =
             , nav
                 [ id "menu" ]
                 [ section []
-                    [ h1 [] [ text "Tutorials" ]
+                    [ h1 [] [ a [ href "/book/README.md" ] [ text "Tutorials" ] ]
                     , Book.viewSummary model.book.summary
                     ]
                 , section []
