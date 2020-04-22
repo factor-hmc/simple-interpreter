@@ -62,7 +62,6 @@ type alias Model =
     , book : Book.Book
     , time : Float
     , logo : Anim
-    , key : Browser.Navigation.Key
     , foogle : Foogle.Model
     , nav : Nav.Model
     }
@@ -81,8 +80,8 @@ type Msg
     | Terminal Terminal.Msg
     | Logo Logo
     | Trigger Logo Float
-    | Load (Result Http.Error String)
-    | Nav Browser.UrlRequest
+    | Load Nav.Load
+    | Nav Nav.Msg
     | Foogle Foogle.Msg
     | Nop
 
@@ -91,7 +90,7 @@ main =
     Browser.application
         { init = init
         , onUrlChange = \_ -> Nop
-        , onUrlRequest = Nav
+        , onUrlRequest = Nav << Nav.onUrlRequest
         , subscriptions = subscriptions
         , update = update
         , view = view >> toUnstyled >> List.singleton >> Browser.Document "Factor"
@@ -109,10 +108,13 @@ subscriptions mod =
 
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
-init () _ key =
+init () url key =
     let
         ( term, termCmd ) =
             Terminal.init
+
+        (nav, navCmd) =
+            Nav.init url key
     in
     ( { terminal = term
       , time = 0
@@ -126,15 +128,11 @@ init () _ key =
             }
       , foogle = Foogle.init
       , book = Book.init
-      , key = key
-      , nav = Nav.init
+      , nav = nav
       }
     , Cmd.batch
         [ termCmd |> Cmd.map Terminal
-        , Http.get
-            { url = "https://factor-book.netlify.app/json/README.json"
-            , expect = Http.expectString Load
-            }
+        , navCmd |> Cmd.map Load
         ]
     )
 
@@ -193,11 +191,11 @@ update msg model =
             , Task.perform (\t -> Trigger e (toFloat (Time.posixToMillis t) / 1000)) Time.now
             )
 
-        Load (Err _) ->
-            ( model, Cmd.none )
+        Load (Nav.Load (Ok b)) ->
+            ( { model | book = b }, Cmd.none )
 
-        Load (Ok s) ->
-            ( { model | book = Book.update s model.book }, Cmd.none )
+        Load (Nav.Load (Err _)) ->
+            (model, Cmd.none)
 
         Copy s ->
             let
@@ -206,22 +204,13 @@ update msg model =
             in
             ( { model | terminal = t }, c |> Cmd.map Terminal )
 
-        Nav (Browser.Internal u) ->
-            let
-                ( n, c ) =
-                    Nav.update Load model.key u model.nav
-            in
-            ( { model | nav = n }, c )
-
-        Nav (Browser.External u) ->
-            ( model, Cmd.none )
+        Nav m ->
+            Nav.update m model.nav
+            |> \(mo, c) -> ( { model | nav = mo }, Cmd.map Load c )
 
         Foogle m ->
-            let
-                ( f, c ) =
-                    Foogle.update m model.foogle
-            in
-            ( { model | foogle = f }, Cmd.map Foogle c )
+            Foogle.update m model.foogle
+                |> (\( mo, c ) -> ( { model | foogle = mo }, Cmd.map Foogle c ))
 
         Nop ->
             ( model, Cmd.none )

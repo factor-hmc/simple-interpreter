@@ -230,11 +230,13 @@
     }
 
     pre {
-      padding: .5em;
+      overflow-x: auto;
       code {
+        display: inline-block;
         border: none;
         background: none;
-        padding: 0;
+        padding: .75em;
+
       }
     }
 
@@ -278,41 +280,80 @@
     margin: 0;
   }
 
-  input {
-    margin: 1rem 0;
-  }
+  .search {
+    display: flex;
+    margin-bottom: .5rem;
 
-  .results {
-    font-family: 'Roboto Mono', monospace;
-    line-height: 1.5em;
-
-    .result {
+    input {
+      font: .875rem 'Roboto Mono',monospace;
+      border-radius: 3px 0 0 3px;
+      border: 1px solid #ddd;
+      padding: .25em .5em;
+      flex-grow: 1;
+      border-right: none;
     }
-  }
-  
-  .result-link:link {
-    text-decoration: none;
-  }
-  .result-link:visited {
-    text-decoration: none;
-  }
-  .result-link:hover {
-    text-decoration: underline;
-  }
-  .result-link:active {
-    text-decoration: underline;
+
+    button {
+      font: inherit;
+      border: 1px solid #ddd;
+      border-radius: 0 3px 3px 0;
+      cursor: pointer;
+      outline: none;
+      transform: none;
+      position: relative;
+      padding: .25em .5em;
+
+      &::-moz-focus-inner {
+        border: none;
+      }
+
+      &:active {
+        background: #eee;
+      }
+    }
+
   }
 
-  .result-vocabulary-link:link {
-    text-decoration: none;
+  .controls {
+    display: flex;
+    font-size: .875em;
+    align-items: baseline;
+    margin-bottom: 1rem;
+    justify-content: flex-end;
+
+    label {
+      margin-right: .5em;
+    }
+
+    .num-results {
+      font: inherit;
+      width: 2em;
+      padding: .125em 0 .125em .5em;
+      background: white;
+      border: 1px solid #ddd;
+    }
+
   }
-  .result-vocabulary-link:visited {
-    text-decoration: none;
-  }
-  .result-vocabulary-link:hover {
-    text-decoration: underline;
-  }
-  .result-vocabulary-link:active {
-    text-decoration: underline;
+
+  .entries {
+    width: 100%;
+    font: .875rem 'Roboto Mono',monospace;
+    line-height: 1.5em;
+    border-collapse: collapse;
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    td {
+      padding: .25em .5em;
+    }
+
+    tbody {
+      tr:nth-child(odd) {
+        background-color: #eee;
+      }
+    }
   }
 }

@@ -1,9 +1,9 @@
 module Foogle exposing (..)
 
 import Browser
-import Html.Styled exposing (Attribute, Html, a, div, h2, input, pre, text, toUnstyled)
+import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (..)
-import Html.Styled.Events exposing (on, onInput, preventDefaultOn)
+import Html.Styled.Events exposing (..)
 import Http
 import Json.Decode as JD
 import Url.Builder as Url
@@ -79,7 +79,7 @@ searchResultsDecoder : JD.Decoder (List SearchResult)
 searchResultsDecoder =
     let
         searchResultDecoder =
-            JD.map5 (\name effect url vocabulary vocabularyURL -> { name = name, effect = effect, url = url, vocabulary = vocabulary, vocabularyURL = vocabularyURL})
+            JD.map5 SearchResult
                 (JD.field "name" JD.string)
                 (JD.field "effect" JD.string)
                 (JD.field "url" JD.string)
@@ -91,19 +91,23 @@ searchResultsDecoder =
 
 view : Model -> List (Html Msg)
 view model =
-    [ h2 [] [ text "Foogle" ]
-    , input
-        [ placeholder "Search Foogle"
-        , value model.query
-        , onInput UpdateQuery
-        , preventDefaultOn "keydown" eventKey
+    [ div [ class "search" ]
+        [ input
+            [ placeholder "Search Foogle"
+            , value model.query
+            , onInput UpdateQuery
+            , preventDefaultOn "keydown" eventKey
+            ]
+            []
+        , button [ onClick Search ] [ text "Search" ]
         ]
-        []
-    , div
-        []
-        [ text "Number of results"
+    , div [ class "controls" ]
+        [ label
+            []
+            [ text "Number of results" ]
         , input
-            [ value (String.fromInt model.numResults)
+            [ class "num-results"
+            , value (String.fromInt model.numResults)
             , onInput UpdateNumResults
             , type_ "number"
             , Html.Styled.Attributes.min "1"
@@ -115,72 +119,85 @@ view model =
     ]
 
 
+viewEntry : SearchResult -> Html Msg
+viewEntry res =
+    tr [ class "entry" ]
+        [ td [ class "vocab" ]
+            [ a [ href res.vocabularyURL ]
+                [ text res.vocabulary ]
+            ]
+        , td [ class "word" ]
+            [ a [ href res.url ]
+                [ text <| res.name ++ " " ++ res.effect ]
+            ]
+        ]
+
+
 viewSearchResults : Result Http.Error (List SearchResult) -> Html Msg
 viewSearchResults searchResults =
-    pre
-        [ class "results" ]
-        (case searchResults of
-            Ok reses ->
-                let
-                    maxLength = Maybe.withDefault 0 <| List.maximum <| List.map (\res -> String.length res.vocabulary) reses
-                    viewSearchResult res =
-                        div [ class "result" ] [ a
-                                                   [ class "result-vocabulary-link", href res.vocabularyURL ]
-                                                   [ text res.vocabulary ]
-                                               , text <| String.repeat (1 + maxLength - String.length res.vocabulary) " "
-                                               , a 
-                                                   [ class "result-link", href res.url ]
-                                                   [ text (": " ++ res.name ++ " " ++ res.effect) ]
-                                               ]
-                in List.map viewSearchResult reses
+    case searchResults of
+        Ok entries ->
+            table
+                [ class "entries" ]
+                [ thead []
+                    [ tr []
+                        [ th [] [ text "Vocabulary" ]
+                        , th [] [ text "Word" ]
+                        ]
+                    ]
+                , tbody [] <| List.map viewEntry entries
+                ]
 
-            Err err ->
-                case err of
-                    Http.BadBody e ->
-                        [text <| "Error loading search results:", pre [] [text e]]
+        Err err ->
+            case err of
+                Http.BadBody e ->
+                    div []
+                        [ text <| "Error loading search results:", pre [] [ text e ] ]
 
-                    Http.BadUrl url ->
-                        [ text <| "Error loading search results: bad url " ++ url ]
+                Http.BadUrl url ->
+                    text <| "Error loading search results: bad url " ++ url
 
-                    Http.Timeout ->
-                        [ text "Foogle server timed out." ]
+                Http.Timeout ->
+                    text "Foogle server timed out."
 
-                    Http.NetworkError ->
-                        [ text "Foogle server network error." ]
+                Http.NetworkError ->
+                    text "Foogle server network error."
 
-                    _ ->
-                        [ text "Error loading search results." ]
-        )
+                _ ->
+                    text "Error loading search results."
+
 
 expectSearchResults : (Result Http.Error (List SearchResult) -> msg) -> Http.Expect msg
 expectSearchResults toMsg =
-  Http.expectStringResponse toMsg <|
-    \response ->
-      case response of
-        Http.BadUrl_ url ->
-          Err (Http.BadUrl url)
+    Http.expectStringResponse toMsg <|
+        \response ->
+            case response of
+                Http.BadUrl_ url ->
+                    Err (Http.BadUrl url)
 
-        Http.Timeout_ ->
-          Err Http.Timeout
+                Http.Timeout_ ->
+                    Err Http.Timeout
 
-        Http.NetworkError_ ->
-          Err Http.NetworkError
+                Http.NetworkError_ ->
+                    Err Http.NetworkError
 
-        Http.BadStatus_ metadata body ->
-          Err (Http.BadBody <| 
-                "Error " 
-                ++ String.fromInt metadata.statusCode
-                ++ "\n"
-                ++ body
-              )
+                Http.BadStatus_ metadata body ->
+                    Err
+                        (Http.BadBody <|
+                            "Error "
+                                ++ String.fromInt metadata.statusCode
+                                ++ "\n"
+                                ++ body
+                        )
 
-        Http.GoodStatus_ metadata body ->
-          case JD.decodeString searchResultsDecoder body of
-            Ok value ->
-              Ok value
+                Http.GoodStatus_ metadata body ->
+                    case JD.decodeString searchResultsDecoder body of
+                        Ok value ->
+                            Ok value
 
-            Err err ->
-              Err (Http.BadBody (JD.errorToString err))
+                        Err err ->
+                            Err (Http.BadBody (JD.errorToString err))
+
 
 eventKey : JD.Decoder ( Msg, Bool )
 eventKey =

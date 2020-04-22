@@ -1,14 +1,21 @@
 module Nav exposing (..)
 
-import Browser.Navigation as BNav
+import Book
+import Browser
+import Browser.Navigation
 import Http
+import Json.Decode
 import Url
 import Url.Builder
-import Url.Parser as UP exposing ((</>))
+import Url.Parser exposing (..)
 
 
-type alias Msg =
-    Url.Url
+type Load
+    = Load (Result Http.Error Book.Book)
+
+
+type Msg
+    = Url Browser.UrlRequest
 
 
 type Dest
@@ -18,40 +25,65 @@ type Dest
 
 type alias Model =
     { app : Dest
+    , key : Browser.Navigation.Key
     }
 
 
-init : Model
-init =
-    { app = Book []
-    }
+init : Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Load )
+init url key =
+    case parse parser url of
+        Just (Book path) ->
+            ( { app = Book path
+              , key = key
+              }
+            , loadBookPath path
+            )
+
+        Just Foogle ->
+            ( { app = Foogle
+              , key = key
+              }
+            , loadBookPath [ "README.md" ]
+            )
+
+        Nothing ->
+            ( { app = Book []
+              , key = key
+              }
+            , Browser.Navigation.load "/book/README.md"
+            )
 
 
-bookParser : UP.Parser (List String -> a) a
+onUrlRequest : Browser.UrlRequest -> Msg
+onUrlRequest =
+    Url
+
+
+bookParser : Url.Parser.Parser (List String -> a) a
 bookParser =
-    UP.oneOf
-        [ UP.map (\a -> [ a ]) UP.string
-        , UP.map (\a b -> [ a, b ]) <| UP.string </> UP.string
-        , UP.map (\a b c -> [ a, b, c ]) <| UP.string </> UP.string </> UP.string
-        , UP.map (\a b c d -> [ a, b, c, d ]) <|
-            UP.string
-                </> UP.string
-                </> UP.string
-                </> UP.string
-        , UP.map (\a b c d e -> [ a, b, c, d, e ]) <|
-            UP.string
-                </> UP.string
-                </> UP.string
-                </> UP.string
-                </> UP.string
+    oneOf
+        [ map (\a -> [ a ]) string
+        , map (\a b -> [ a, b ]) <| string </> string
+        , map (\a b c -> [ a, b, c ]) <| string </> string </> string
+        , map (\a b c d -> [ a, b, c, d ]) <|
+            string
+                </> string
+                </> string
+                </> string
+        , map (\a b c d e -> [ a, b, c, d, e ]) <|
+            string
+                </> string
+                </> string
+                </> string
+                </> string
         ]
 
 
-parser : UP.Parser (Dest -> a) a
+parser : Parser (Dest -> a) a
 parser =
-    UP.oneOf
-        [ UP.s "book" </> UP.map Book bookParser
-        , UP.s "foogle" |> UP.map Foogle
+    oneOf
+        [ s "book" </> map Book bookParser
+        , s "foogle" |> map Foogle
         ]
 
 
@@ -89,31 +121,43 @@ bookPathToJson =
     mapLast <| replaceExt "md" "json"
 
 
-update :
-    (Result Http.Error String -> loadMsg)
-    -> BNav.Key
-    -> Msg
-    -> Model
-    -> ( Model, Cmd loadMsg )
-update load key u model =
-    case UP.parse parser u of
-        Just (Book path) ->
-            ( { app = Book path }
-            , Cmd.batch
-                [ Http.get
-                    { expect = Http.expectString load
-                    , url =
-                        Url.Builder.crossOrigin
-                            "https://factor-book.netlify.app"
-                            ("json" :: bookPathToJson path)
-                            []
-                    }
-                , BNav.pushUrl key <| Url.toString u
-                ]
-            )
+loadPath : List String -> Cmd Load
+loadPath path =
+    Http.get
+        { expect = Http.expectJson Load Book.book
+        , url =
+            Url.Builder.crossOrigin
+                "https://factor-book.netlify.app"
+                ("json" :: path)
+                []
+        }
 
-        Just Foogle ->
-            ( { app = Foogle }, BNav.pushUrl key <| Url.toString u )
 
-        Nothing ->
-            ( model, Cmd.none )
+loadBookPath : List String -> Cmd Load
+loadBookPath =
+    loadPath << bookPathToJson
+
+
+update : Msg -> Model -> ( Model, Cmd Load )
+update msg mod =
+    case msg of
+        Url (Browser.External _) ->
+            ( mod, Cmd.none )
+
+        Url (Browser.Internal url) ->
+            case parse parser url of
+                Just (Book path) ->
+                    ( { mod | app = Book path }
+                    , Cmd.batch
+                        [ loadPath <| bookPathToJson path
+                        , Browser.Navigation.pushUrl mod.key <| Url.toString url
+                        ]
+                    )
+
+                Just Foogle ->
+                    ( { mod | app = Foogle }
+                    , Browser.Navigation.pushUrl mod.key <| Url.toString url
+                    )
+
+                Nothing ->
+                    ( mod, Cmd.none )
