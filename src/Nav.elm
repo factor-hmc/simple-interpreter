@@ -1,6 +1,7 @@
 module Nav exposing (..)
 
 import Book
+import Book.Url
 import Browser
 import Browser.Navigation
 import Http
@@ -26,6 +27,7 @@ type Dest
 type alias Model =
     { app : Dest
     , key : Browser.Navigation.Key
+    , url : Url.Url
     }
 
 
@@ -35,6 +37,7 @@ init url key =
         Just (Book path) ->
             ( { app = Book path
               , key = key
+              , url = url
               }
             , loadBookPath path
             )
@@ -42,6 +45,7 @@ init url key =
         Just Foogle ->
             ( { app = Foogle
               , key = key
+              , url = url
               }
             , loadBookPath [ "README.md" ]
             )
@@ -49,6 +53,7 @@ init url key =
         Nothing ->
             ( { app = Book []
               , key = key
+              , url = url
               }
             , Browser.Navigation.load "/book/README.md"
             )
@@ -59,66 +64,12 @@ onUrlRequest =
     Url
 
 
-bookParser : Url.Parser.Parser (List String -> a) a
-bookParser =
-    oneOf
-        [ map (\a -> [ a ]) string
-        , map (\a b -> [ a, b ]) <| string </> string
-        , map (\a b c -> [ a, b, c ]) <| string </> string </> string
-        , map (\a b c d -> [ a, b, c, d ]) <|
-            string
-                </> string
-                </> string
-                </> string
-        , map (\a b c d e -> [ a, b, c, d, e ]) <|
-            string
-                </> string
-                </> string
-                </> string
-                </> string
-        ]
-
-
 parser : Parser (Dest -> a) a
 parser =
     oneOf
-        [ s "book" </> map Book bookParser
+        [ s "book" </> map Book Book.Url.parser
         , s "foogle" |> map Foogle
         ]
-
-
-mapHead : (a -> a) -> List a -> List a
-mapHead f l =
-    case l of
-        a :: rest ->
-            f a :: rest
-
-        _ ->
-            l
-
-
-mapLast : (a -> a) -> List a -> List a
-mapLast f =
-    List.reverse >> mapHead f >> List.reverse
-
-
-replaceExt : String -> String -> String -> String
-replaceExt a b =
-    String.split "."
-        >> mapLast
-            (\ext ->
-                if ext == a then
-                    b
-
-                else
-                    ext
-            )
-        >> String.join "."
-
-
-bookPathToJson : List String -> List String
-bookPathToJson =
-    mapLast <| replaceExt "md" "json"
 
 
 loadPath : List String -> Cmd Load
@@ -135,7 +86,7 @@ loadPath path =
 
 loadBookPath : List String -> Cmd Load
 loadBookPath =
-    loadPath << bookPathToJson
+    loadPath << Book.Url.pathToJson
 
 
 update : Msg -> Model -> ( Model, Cmd Load )
@@ -147,15 +98,15 @@ update msg mod =
         Url (Browser.Internal url) ->
             case parse parser url of
                 Just (Book path) ->
-                    ( { mod | app = Book path }
+                    ( { mod | app = Book path, url = url }
                     , Cmd.batch
-                        [ loadPath <| bookPathToJson path
+                        [ loadBookPath path
                         , Browser.Navigation.pushUrl mod.key <| Url.toString url
                         ]
                     )
 
                 Just Foogle ->
-                    ( { mod | app = Foogle }
+                    ( { mod | app = Foogle, url = url }
                     , Browser.Navigation.pushUrl mod.key <| Url.toString url
                     )
 

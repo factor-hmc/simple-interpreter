@@ -1,5 +1,6 @@
 module Book exposing (..)
 
+import Book.Url
 import Html.Parser
 import Html.Styled as Html exposing (..)
 import Html.Styled.Attributes as Attr exposing (id, property)
@@ -7,6 +8,7 @@ import Html.Styled.Events as Ev
 import Json.Decode as JD exposing (..)
 import Json.Encode
 import Terminal
+import Url.Parser exposing ((</>))
 
 
 type alias File =
@@ -203,6 +205,13 @@ viewNode copy n =
         elem t a c =
             Html.node t (List.map attr a) <| List.map (viewNode copy) c
 
+        modifyAttr km f ( k, v ) =
+            if k == km then
+                f v
+
+            else
+                v
+
         isFactor c =
             case c of
                 [ Html.Parser.Element "code" [ ( "class", "lang-factor" ) ] _ ] ->
@@ -222,14 +231,14 @@ viewNode copy n =
                         [ Attr.class "code-block" ]
                         [ Html.pre [] <| List.map (viewNode copy) c
                         , if isFactor c then
-                                button
-                                    [ Ev.onClick <|
-                                        copy (List.map textContent c |> String.concat)
-                                    ]
-                                    [ text "➦" ]
-                          else
+                            button
+                                [ Ev.onClick <|
+                                    copy (List.map textContent c |> String.concat)
+                                ]
+                                [ text "➦" ]
 
-                                text ""
+                          else
+                            text ""
                         ]
 
                 _ ->
