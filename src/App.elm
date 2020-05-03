@@ -113,7 +113,7 @@ init () url key =
         ( term, termCmd ) =
             Terminal.init
 
-        (nav, navCmd) =
+        ( nav, navCmd ) =
             Nav.init url key
     in
     ( { terminal = term
@@ -195,7 +195,7 @@ update msg model =
             ( { model | book = b }, Cmd.none )
 
         Load (Nav.Load (Err _)) ->
-            (model, Cmd.none)
+            ( model, Cmd.none )
 
         Copy s ->
             let
@@ -206,7 +206,7 @@ update msg model =
 
         Nav m ->
             Nav.update m model.nav
-            |> \(mo, c) -> ( { model | nav = mo }, Cmd.map Load c )
+                |> (\( mo, c ) -> ( { model | nav = mo }, Cmd.map Load c ))
 
         Foogle m ->
             Foogle.update m model.foogle
@@ -246,14 +246,19 @@ view model =
                 ]
             ]
         , div [ id "app" ]
-            [ div
-                [ id "book"
-                , Attr.classList
-                    [ ( "app", True )
-                    , ( "active", model.nav.app /= Nav.Foogle )
-                    ]
-                ]
-                [ Book.viewPage Copy model.book.page ]
+            [ case model.nav.app of
+                Nav.Foogle ->
+                    text ""
+
+                Nav.Book path ->
+                    div
+                        [ id "book"
+                        , Attr.classList
+                            [ ( "app", True )
+                            , ( "active", model.nav.app /= Nav.Foogle )
+                            ]
+                        ]
+                        [ Book.viewPage Copy path model.book.page ]
             , div
                 [ id "foogle"
                 , Attr.classList

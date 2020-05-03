@@ -8,6 +8,8 @@ import Html.Styled.Events as Ev
 import Json.Decode as JD exposing (..)
 import Json.Encode
 import Terminal
+import Url
+import Url.Builder
 import Url.Parser exposing ((</>))
 
 
@@ -191,8 +193,8 @@ textContent n =
             ""
 
 
-viewNode : (String -> msg) -> Html.Parser.Node -> Html msg
-viewNode copy n =
+viewNode : (String -> msg) -> List String -> Html.Parser.Node -> Html msg
+viewNode copy path n =
     let
         attr ( k, v ) =
             case k of
@@ -203,14 +205,47 @@ viewNode copy n =
                     property k <| Json.Encode.string v
 
         elem t a c =
-            Html.node t (List.map attr a) <| List.map (viewNode copy) c
+            Html.node t (List.map attr a) <| List.map (viewNode copy path) c
 
         modifyAttr km f ( k, v ) =
-            if k == km then
+            ( k
+            , if k == km then
                 f v
 
-            else
+              else
                 v
+            )
+
+        isJust a =
+            case a of
+                Just _ ->
+                    True
+
+                Nothing ->
+                    False
+
+        rewriteUrl p =
+            -- if p parses as a URL, then it is an absolute/external
+            -- path, and we leave it alone; otherwise we set it to a
+            -- relative path
+            if isJust <| Url.fromString p then
+                p
+
+            else
+                Url.Builder.crossOrigin "https://factor-book.netlify.app"
+                    (if String.startsWith "/" p then
+                        -- abs path
+                        [ p ]
+
+                     else
+                        -- rel path
+                        List.reverse path
+                            |> List.tail
+                            |> Maybe.withDefault []
+                            |> (::) p
+                            |> List.reverse
+                    )
+                    []
 
         isFactor c =
             case c of
@@ -229,7 +264,7 @@ viewNode copy n =
                 "pre" ->
                     Html.div
                         [ Attr.class "code-block" ]
-                        [ Html.pre [] <| List.map (viewNode copy) c
+                        [ Html.pre [] <| List.map (viewNode copy path) c
                         , if isFactor c then
                             button
                                 [ Ev.onClick <|
@@ -241,6 +276,12 @@ viewNode copy n =
                             text ""
                         ]
 
+                "img" ->
+                    Html.img
+                        (List.map (attr << modifyAttr "src" rewriteUrl) a)
+                    <|
+                        List.map (viewNode copy path) c
+
                 _ ->
                     elem t a c
 
@@ -248,18 +289,12 @@ viewNode copy n =
             Html.text ""
 
 
-
---viewContent : List Html.Parser.Node -> List (Html Terminal.Msg)
---viewContent =
---    List.map viewNode
-
-
-viewPage : (String -> msg) -> Page -> Html msg
-viewPage copy p =
+viewPage : (String -> msg) -> List String -> Page -> Html msg
+viewPage copy path p =
     div
         [ id "book-content" ]
         (Html.Parser.run p.content
-            |> Result.map (List.map <| viewNode copy)
+            |> Result.map (List.map <| viewNode copy path)
             |> Result.withDefault []
         )
 
