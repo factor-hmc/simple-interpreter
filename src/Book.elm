@@ -213,11 +213,17 @@ viewNode copy n =
                     Html.div
                         [ Attr.class "code-block" ]
                         [ Html.pre [] <| List.map (viewNode copy) c
-                        , button
-                            [ Ev.onClick <|
-                                copy (List.map textContent c |> String.concat)
-                            ]
-                            [ text "➦" ]
+                        , case c of
+                            [ Html.Parser.Element
+                                  "code" [ ( "class", "lang-factor" ) ] _ ] ->
+                                button
+                                    [ Ev.onClick <|
+                                        copy (List.map textContent c |> String.concat)
+                                    ]
+                                    [ text "➦" ]
+
+                            _ ->
+                                text ""
                         ]
 
                 _ ->
