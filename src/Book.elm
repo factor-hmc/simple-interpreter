@@ -202,6 +202,14 @@ viewNode copy n =
 
         elem t a c =
             Html.node t (List.map attr a) <| List.map (viewNode copy) c
+
+        isFactor c =
+            case c of
+                [ Html.Parser.Element "code" [ ( "class", "lang-factor" ) ] _ ] ->
+                    True
+
+                _ ->
+                    False
     in
     case n of
         Html.Parser.Text s ->
@@ -213,16 +221,14 @@ viewNode copy n =
                     Html.div
                         [ Attr.class "code-block" ]
                         [ Html.pre [] <| List.map (viewNode copy) c
-                        , case c of
-                            [ Html.Parser.Element
-                                  "code" [ ( "class", "lang-factor" ) ] _ ] ->
+                        , if isFactor c then
                                 button
                                     [ Ev.onClick <|
                                         copy (List.map textContent c |> String.concat)
                                     ]
                                     [ text "➦" ]
+                          else
 
-                            _ ->
                                 text ""
                         ]
 
